@@ -35,9 +35,16 @@ const ExportButton = ({ items }) => {
     
     // Force RTL direction for the worksheet
     if(!worksheet['!views']) worksheet['!views'] = [];
-    worksheet['!views'].push({ rightToLeft: true });
+    worksheet['!views'].push({ rightToLeft: true, RTL: true });
+    worksheet['!dir'] = 'rtl'; // Standard SheetJS flag for RTL
 
     const workbook = XLSX.utils.book_new();
+    
+    // Force RTL on workbook level as well
+    workbook.Workbook = {
+      Views: [{ RTL: true, rightToLeft: true }]
+    };
+    
     XLSX.utils.book_append_sheet(workbook, worksheet, "דוח מלאי");
 
     // Generate Excel file and trigger download
