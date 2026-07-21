@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { PackageSearch, LogOut, Users, MapPin, Activity } from 'lucide-react';
-import { collection, onSnapshot, doc, setDoc, deleteDoc, writeBatch } from 'firebase/firestore';
-import { db } from './firebase';
+import { supabase } from './supabase';
 import InventoryForm from './components/InventoryForm';
 import InventoryTable from './components/InventoryTable';
 import ExportButton from './components/ExportButton';
@@ -31,11 +30,7 @@ function App() {
   const [currentUser, setCurrentUser] = useState(() => {
     const saved = localStorage.getItem('currentUser');
     if (saved) {
-      try {
-        return JSON.parse(saved);
-      } catch (e) {
-        return null;
-      }
+      try { return JSON.parse(saved); } catch (e) { return null; }
     }
     return null;
   });
@@ -49,40 +44,68 @@ function App() {
   const [showLocationManagement, setShowLocationManagement] = useState(false);
   const [showActivityLog, setShowActivityLog] = useState(false);
 
-  // Subscribe to Firestore collections (Real-time syncing)
+  // Subscribe to Supabase collections (Real-time syncing)
   useEffect(() => {
-    const unsubItems = onSnapshot(collection(db, 'items'), (snapshot) => {
-      const data = snapshot.docs.map(d => d.data());
-      setItems(data.sort((a,b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0)));
-    });
+    const fetchData = async () => {
+      const [{ data: itemsData }, { data: locData }, { data: logData }, { data: usersData }] = await Promise.all([
+        supabase.from('items').select('*').order('createdAt', { ascending: false }),
+        supabase.from('locations').select('*'),
+        supabase.from('activityLogs').select('*').order('timestamp', { ascending: false }),
+        supabase.from('users').select('*')
+      ]);
 
-    const unsubLocations = onSnapshot(collection(db, 'locations'), (snapshot) => {
-      setLocations(snapshot.docs.map(d => d.data()));
-    });
-
-    const unsubLogs = onSnapshot(collection(db, 'activityLogs'), (snapshot) => {
-      const data = snapshot.docs.map(d => d.data());
-      setActivityLogs(data.sort((a,b) => new Date(b.timestamp) - new Date(a.timestamp)));
-    });
-
-    const unsubUsers = onSnapshot(collection(db, 'users'), (snapshot) => {
-      const data = snapshot.docs.map(d => d.data());
-      if (!data.some(u => u.email === DEFAULT_ADMIN.email)) {
-        setUsers([DEFAULT_ADMIN, ...data]);
-      } else {
-        setUsers(data);
+      if (itemsData) setItems(itemsData);
+      if (locData) setLocations(locData);
+      if (logData) setActivityLogs(logData);
+      
+      if (usersData) {
+        if (!usersData.some(u => u.email === DEFAULT_ADMIN.email)) setUsers([DEFAULT_ADMIN, ...usersData]);
+        else setUsers(usersData);
       }
-    });
+    };
+    
+    fetchData();
+
+    // Realtime Subscriptions
+    const itemsSub = supabase.channel('items-changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'items' }, async () => {
+         const { data } = await supabase.from('items').select('*').order('createdAt', { ascending: false });
+         if (data) setItems(data);
+      }).subscribe();
+
+    const locSub = supabase.channel('locations-changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'locations' }, async () => {
+         const { data } = await supabase.from('locations').select('*');
+         if (data) setLocations(data);
+      }).subscribe();
+
+    const logsSub = supabase.channel('logs-changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'activityLogs' }, async () => {
+         const { data } = await supabase.from('activityLogs').select('*').order('timestamp', { ascending: false });
+         if (data) setActivityLogs(data);
+      }).subscribe();
+
+    const usersSub = supabase.channel('users-changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'users' }, async () => {
+         const { data } = await supabase.from('users').select('*');
+         if (data) {
+           if (!data.some(u => u.email === DEFAULT_ADMIN.email)) setUsers([DEFAULT_ADMIN, ...data]);
+           else setUsers(data);
+         }
+      }).subscribe();
 
     return () => {
-      unsubItems(); unsubLocations(); unsubLogs(); unsubUsers();
+      supabase.removeChannel(itemsSub);
+      supabase.removeChannel(locSub);
+      supabase.removeChannel(logsSub);
+      supabase.removeChannel(usersSub);
     };
   }, []);
 
-  // One-time data migration from localStorage to Firestore
+  // One-time data migration from localStorage to Supabase
   useEffect(() => {
     const migrateData = async () => {
-      const hasMigrated = localStorage.getItem('migratedToFirebase');
+      const hasMigrated = localStorage.getItem('migratedToSupabase');
       if (!hasMigrated) {
         try {
           const localItems = JSON.parse(localStorage.getItem('inventoryData') || '[]');
@@ -90,28 +113,32 @@ function App() {
           const localLocations = JSON.parse(localStorage.getItem('inventoryLocations') || '[]');
           const localUsers = JSON.parse(localStorage.getItem('inventoryUsers') || '[]');
 
-          const allDocs = [];
-          localItems.forEach(i => allDocs.push({ col: 'items', id: i.id, data: { ...i, createdAt: i.createdAt || new Date().toISOString() } }));
-          localLocations.forEach(i => allDocs.push({ col: 'locations', id: i.id, data: i }));
-          localLogs.forEach(i => allDocs.push({ col: 'activityLogs', id: i.id, data: i }));
-          localUsers.forEach(i => { 
-            if(i.id !== DEFAULT_ADMIN.id) allDocs.push({ col: 'users', id: i.id, data: i }); 
-          });
-
-          if (allDocs.length > 0) {
-             console.log(`Migrating ${allDocs.length} records to Firestore...`);
-             const chunkArray = (arr, size) => Array.from({ length: Math.ceil(arr.length / size) }, (v, i) => arr.slice(i * size, i * size + size));
-             const chunks = chunkArray(allDocs, 450); // max batch size is 500
-             
-             for (const chunk of chunks) {
-               const batch = writeBatch(db);
-               chunk.forEach(docItem => {
-                 batch.set(doc(db, docItem.col, docItem.id), docItem.data);
-               });
-               await batch.commit();
+          let count = 0;
+          if (localItems.length > 0) {
+             const itemsToInsert = localItems.map(i => ({ ...i, createdAt: i.createdAt || new Date().toISOString() }));
+             await supabase.from('items').upsert(itemsToInsert);
+             count += itemsToInsert.length;
+          }
+          if (localLocations.length > 0) {
+             await supabase.from('locations').upsert(localLocations);
+             count += localLocations.length;
+          }
+          if (localLogs.length > 0) {
+             await supabase.from('activityLogs').upsert(localLogs);
+             count += localLogs.length;
+          }
+          if (localUsers.length > 0) {
+             const usersToInsert = localUsers.filter(u => u.id !== DEFAULT_ADMIN.id);
+             if (usersToInsert.length > 0) {
+                await supabase.from('users').upsert(usersToInsert);
+                count += usersToInsert.length;
              }
           }
-          localStorage.setItem('migratedToFirebase', 'true');
+
+          if (count > 0) {
+             console.log(`Migrated ${count} records to Supabase`);
+          }
+          localStorage.setItem('migratedToSupabase', 'true');
         } catch (e) {
           console.error("Migration failed: ", e);
         }
@@ -130,7 +157,7 @@ function App() {
       timestamp: new Date().toISOString()
     };
     try {
-      await setDoc(doc(db, 'activityLogs', log.id), log);
+      await supabase.from('activityLogs').insert([log]);
     } catch(e) { console.error(e); }
   };
 
@@ -150,16 +177,14 @@ function App() {
   const handleAddItem = async (newItems) => {
     try {
       if (Array.isArray(newItems)) {
-        const batch = writeBatch(db);
-        newItems.forEach(item => {
-          const data = { ...item, createdAt: new Date().toISOString() };
-          batch.set(doc(db, 'items', item.id), data);
-        });
-        await batch.commit();
+        const itemsToInsert = newItems.map(item => ({ ...item, createdAt: new Date().toISOString() }));
+        const { error } = await supabase.from('items').insert(itemsToInsert);
+        if (error) throw error;
         logActivity('ADD', newItems[0].itemName, `נוספו ${newItems.length} רשומות חדשות`);
       } else {
-        const data = { ...newItems, createdAt: new Date().toISOString() };
-        await setDoc(doc(db, 'items', newItems.id), data);
+        const itemToInsert = { ...newItems, createdAt: new Date().toISOString() };
+        const { error } = await supabase.from('items').insert([itemToInsert]);
+        if (error) throw error;
         logActivity('ADD', newItems.itemName, `נוסף פריט. אינוונטר: ${newItems.inventoryNumber}`);
       }
     } catch(e) {
@@ -169,7 +194,8 @@ function App() {
 
   const handleUpdateItem = async (updatedItem) => {
     try {
-      await setDoc(doc(db, 'items', updatedItem.id), updatedItem);
+      const { error } = await supabase.from('items').update(updatedItem).eq('id', updatedItem.id);
+      if (error) throw error;
       logActivity('UPDATE', updatedItem.itemName, `עודכן פריט. אינוונטר: ${updatedItem.inventoryNumber}`);
     } catch(e) {
       alert("שגיאה בעדכון: " + e.message);
@@ -185,7 +211,8 @@ function App() {
     if (window.confirm('האם אתה בטוח שברצונך למחוק פריט זה?')) {
       const itemToDelete = items.find(item => item.id === id);
       try {
-        await deleteDoc(doc(db, 'items', id));
+        const { error } = await supabase.from('items').delete().eq('id', id);
+        if (error) throw error;
         if (itemToDelete) {
           logActivity('DELETE', itemToDelete.itemName, `נמחק פריט. אינוונטר: ${itemToDelete.inventoryNumber}`);
         }
@@ -197,7 +224,7 @@ function App() {
 
   const handleAddUser = async (newUser) => {
     try {
-      await setDoc(doc(db, 'users', newUser.id), newUser);
+      await supabase.from('users').insert([newUser]);
     } catch(e) { alert("שגיאה בהוספת משתמש"); }
   };
 
@@ -210,35 +237,27 @@ function App() {
     
     if (window.confirm('האם אתה בטוח שברצונך למחוק משתמש זה?')) {
       try {
-        await deleteDoc(doc(db, 'users', id));
+        await supabase.from('users').delete().eq('id', id);
       } catch(e) { alert("שגיאה במחיקת משתמש"); }
     }
   };
 
   const handleAddLocation = async (newLocation) => {
     try {
-      await setDoc(doc(db, 'locations', newLocation.id), newLocation);
+      await supabase.from('locations').insert([newLocation]);
     } catch(e) { alert("שגיאה בהוספת מיקום"); }
   };
 
   const handleDeleteLocation = async (id) => {
     try {
-      await deleteDoc(doc(db, 'locations', id));
+      await supabase.from('locations').delete().eq('id', id);
     } catch(e) { alert("שגיאה במחיקת מיקום"); }
   };
 
   const clearLogs = async () => {
     if (window.confirm('למחוק את כל היסטוריית הפעולות?')) {
-       // Since it could be many, we will delete them in chunks
-       const chunkArray = (arr, size) => Array.from({ length: Math.ceil(arr.length / size) }, (v, i) => arr.slice(i * size, i * size + size));
-       const chunks = chunkArray(activityLogs, 450);
-       for (const chunk of chunks) {
-         const batch = writeBatch(db);
-         chunk.forEach(log => {
-           batch.delete(doc(db, 'activityLogs', log.id));
-         });
-         await batch.commit();
-       }
+       // Delete all rows trick in Supabase
+       await supabase.from('activityLogs').delete().neq('id', 'dummy'); 
     }
   };
 
