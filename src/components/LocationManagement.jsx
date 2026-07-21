@@ -1,6 +1,13 @@
 import React, { useState } from 'react';
 import { MapPin, Plus, Trash2, ArrowRight } from 'lucide-react';
 
+const generateId = () => {
+  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+    return crypto.randomUUID();
+  }
+  return Date.now().toString(36) + Math.random().toString(36).substring(2);
+};
+
 const LocationManagement = ({ locations, onAddLocation, onDeleteLocation, onBack }) => {
   const [locationName, setLocationName] = useState('');
 
@@ -18,7 +25,7 @@ const LocationManagement = ({ locations, onAddLocation, onDeleteLocation, onBack
     }
 
     onAddLocation({
-      id: crypto.randomUUID(),
+      id: generateId(),
       name: locationName.trim(),
       createdAt: new Date().toISOString()
     });

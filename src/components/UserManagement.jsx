@@ -1,6 +1,13 @@
 import React, { useState } from 'react';
 import { Users, UserPlus, Shield, Trash2, ArrowRight } from 'lucide-react';
 
+const generateId = () => {
+  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+    return crypto.randomUUID();
+  }
+  return Date.now().toString(36) + Math.random().toString(36).substring(2);
+};
+
 const UserManagement = ({ users, onAddUser, onDeleteUser, onBack }) => {
   const [formData, setFormData] = useState({
     email: '',
@@ -27,7 +34,7 @@ const UserManagement = ({ users, onAddUser, onDeleteUser, onBack }) => {
     }
 
     onAddUser({
-      id: crypto.randomUUID(),
+      id: generateId(),
       email: formData.email,
       password: formData.password,
       role: formData.role,
