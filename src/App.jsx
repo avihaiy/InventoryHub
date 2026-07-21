@@ -157,7 +157,8 @@ function App() {
       timestamp: new Date().toISOString()
     };
     try {
-      await supabase.from('activityLogs').insert([log]);
+      const { error } = await supabase.from('activityLogs').insert([log]);
+      if (error) console.error(error);
     } catch(e) { console.error(e); }
   };
 
@@ -224,8 +225,9 @@ function App() {
 
   const handleAddUser = async (newUser) => {
     try {
-      await supabase.from('users').insert([newUser]);
-    } catch(e) { alert("שגיאה בהוספת משתמש"); }
+      const { error } = await supabase.from('users').insert([newUser]);
+      if (error) throw error;
+    } catch(e) { alert("שגיאה בהוספת משתמש: " + e.message); }
   };
 
   const handleDeleteUser = async (id) => {
@@ -237,21 +239,26 @@ function App() {
     
     if (window.confirm('האם אתה בטוח שברצונך למחוק משתמש זה?')) {
       try {
-        await supabase.from('users').delete().eq('id', id);
-      } catch(e) { alert("שגיאה במחיקת משתמש"); }
+        const { error } = await supabase.from('users').delete().eq('id', id);
+        if (error) throw error;
+      } catch(e) { alert("שגיאה במחיקת משתמש: " + e.message); }
     }
   };
 
   const handleAddLocation = async (newLocation) => {
     try {
-      await supabase.from('locations').insert([newLocation]);
-    } catch(e) { alert("שגיאה בהוספת מיקום"); }
+      // Remove createdAt to match schema
+      const { createdAt, ...locationToInsert } = newLocation;
+      const { error } = await supabase.from('locations').insert([locationToInsert]);
+      if (error) throw error;
+    } catch(e) { alert("שגיאה בהוספת מיקום: " + e.message); }
   };
 
   const handleDeleteLocation = async (id) => {
     try {
-      await supabase.from('locations').delete().eq('id', id);
-    } catch(e) { alert("שגיאה במחיקת מיקום"); }
+      const { error } = await supabase.from('locations').delete().eq('id', id);
+      if (error) throw error;
+    } catch(e) { alert("שגיאה במחיקת מיקום: " + e.message); }
   };
 
   const clearLogs = async () => {
