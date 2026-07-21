@@ -255,6 +255,31 @@ tbody tr:hover {
   background: rgba(255, 255, 255, 0.03);
 }
 
+.edit-input {
+  background: var(--bg-input);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  padding: 0.5rem;
+  border-radius: var(--radius-md);
+  font-family: inherit;
+  font-size: 0.9rem;
+  width: 100%;
+  outline: none;
+}
+
+.edit-input:focus {
+  border-color: var(--accent-color);
+}
+
+.custom-select-small {
+  appearance: none;
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: left 0.5rem center;
+  background-size: 0.8em;
+  padding-left: 2rem;
+}
+
 .empty-state {
   text-align: center;
   padding: 3rem;

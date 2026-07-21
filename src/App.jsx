@@ -106,6 +106,10 @@ function App() {
     }
   };
 
+  const handleUpdateItem = (updatedItem) => {
+    setItems(prev => prev.map(item => item.id === updatedItem.id ? updatedItem : item));
+  };
+
   const handleDeleteItem = (id) => {
     if (currentUser?.role !== 'admin') {
       alert('אין לך הרשאות למחוק פריטים.');
@@ -202,7 +206,9 @@ function App() {
             <InventoryTable 
               items={items} 
               onDeleteItem={handleDeleteItem} 
+              onUpdateItem={handleUpdateItem}
               userRole={currentUser.role}
+              locations={locations}
             />
           </>
         )}
