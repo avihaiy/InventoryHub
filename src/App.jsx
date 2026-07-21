@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { PackageSearch, LogOut, Users, MapPin } from 'lucide-react';
+import { PackageSearch, LogOut, Users, MapPin, Activity } from 'lucide-react';
 import InventoryForm from './components/InventoryForm';
 import InventoryTable from './components/InventoryTable';
 import ExportButton from './components/ExportButton';
