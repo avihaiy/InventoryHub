@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { Trash2, BoxSelect, Edit2, Save, X, ChevronDown, ChevronLeft } from 'lucide-react';
+import { Trash2, BoxSelect, Edit2, Save, X, ChevronDown, ChevronLeft, Search } from 'lucide-react';
 
 const InventoryTable = ({ items, onDeleteItem, onUpdateItem, userRole, locations = [] }) => {
   const [editingId, setEditingId] = useState(null);
   const [editFormData, setEditFormData] = useState({});
   const [expandedGroups, setExpandedGroups] = useState({});
+  const [searchTerm, setSearchTerm] = useState('');
 
   const handleEditClick = (item, e) => {
     e.stopPropagation();
@@ -50,8 +51,20 @@ const InventoryTable = ({ items, onDeleteItem, onUpdateItem, userRole, locations
     );
   }
 
+  // Filter items based on search term
+  const filteredItems = items.filter(item => {
+    if (!searchTerm) return true;
+    const term = searchTerm.toLowerCase();
+    return (
+      (item.itemName && item.itemName.toLowerCase().includes(term)) ||
+      (item.inventoryNumber && item.inventoryNumber.toLowerCase().includes(term)) ||
+      (item.serialNumber && item.serialNumber.toLowerCase().includes(term)) ||
+      (item.location && item.location.toLowerCase().includes(term))
+    );
+  });
+
   // Group items by itemName and location
-  const groupedItems = items.reduce((acc, item) => {
+  const groupedItems = filteredItems.reduce((acc, item) => {
     const key = `${item.itemName}::${item.location || ''}`;
     if (!acc[key]) {
       acc[key] = {
@@ -71,7 +84,21 @@ const InventoryTable = ({ items, onDeleteItem, onUpdateItem, userRole, locations
 
   return (
     <div className="card mt-4 animate-slide-in" style={{ animationDelay: '0.1s' }}>
-      <h2 className="card-title">רשימת מלאי ({items.length} רשומות ייחודיות)</h2>
+      <div className="flex flex-col md:flex-row md:justify-between items-start md:items-center gap-4 mb-4">
+        <h2 className="card-title mb-0">רשימת מלאי ({filteredItems.length} מתוך {items.length} רשומות)</h2>
+        
+        <div className="search-container input-with-icon w-full md:w-auto">
+          <input 
+            type="text" 
+            placeholder="חיפוש חופשי..." 
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full md:w-80px"
+            style={{ width: '100%', minWidth: '250px' }}
+          />
+          <Search size={18} className="input-icon" />
+        </div>
+      </div>
       
       <div className="table-container">
         <table>

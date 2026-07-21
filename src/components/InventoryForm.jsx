@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { PackagePlus, Plus, Minus, Hash } from 'lucide-react';
+import { PackagePlus, Plus, Minus, Hash, Scan } from 'lucide-react';
+import BarcodeScanner from './BarcodeScanner';
 
 const InventoryForm = ({ onAddItem, locations = [] }) => {
   const [itemName, setItemName] = useState('');
@@ -7,6 +8,13 @@ const InventoryForm = ({ onAddItem, locations = [] }) => {
   const [identifiers, setIdentifiers] = useState([
     { inventoryNumber: '', serialNumber: '', quantity: 1 }
   ]);
+  const [scannerTarget, setScannerTarget] = useState(null);
+
+  const handleScan = (decodedText) => {
+    if (scannerTarget) {
+      handleIdentifierChange(scannerTarget.index, scannerTarget.field, decodedText);
+    }
+  };
 
   const handleIdentifierChange = (index, field, value) => {
     const newIdentifiers = [...identifiers];
@@ -124,23 +132,45 @@ const InventoryForm = ({ onAddItem, locations = [] }) => {
               <div key={index} className="identifier-row flex flex-col md:flex-row gap-3 md:items-end p-3 rounded-lg" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid var(--border-color)' }}>
                 <div className="input-group w-full" style={{ marginBottom: 0, flex: 1 }}>
                   <label>מספר אינוונטר</label>
-                  <input 
-                    type="text" 
-                    value={identifier.inventoryNumber} 
-                    onChange={(e) => handleIdentifierChange(index, 'inventoryNumber', e.target.value)} 
-                    placeholder="לדוגמה: INV-001"
-                    required
-                  />
+                  <div className="flex gap-2">
+                    <input 
+                      type="text" 
+                      value={identifier.inventoryNumber} 
+                      onChange={(e) => handleIdentifierChange(index, 'inventoryNumber', e.target.value)} 
+                      placeholder="INV-001"
+                      required
+                      className="w-full"
+                    />
+                    <button 
+                      type="button" 
+                      onClick={() => setScannerTarget({ index, field: 'inventoryNumber' })}
+                      className="btn btn-secondary btn-icon"
+                      title="סרוק ברקוד"
+                    >
+                      <Scan size={18} />
+                    </button>
+                  </div>
                 </div>
                 
                 <div className="input-group w-full" style={{ marginBottom: 0, flex: 1 }}>
-                  <label>מספר סריאלי (אופציונלי)</label>
-                  <input 
-                    type="text" 
-                    value={identifier.serialNumber} 
-                    onChange={(e) => handleIdentifierChange(index, 'serialNumber', e.target.value)} 
-                    placeholder="לדוגמה: SN-12345"
-                  />
+                  <label>סריאלי (אופציונלי)</label>
+                  <div className="flex gap-2">
+                    <input 
+                      type="text" 
+                      value={identifier.serialNumber} 
+                      onChange={(e) => handleIdentifierChange(index, 'serialNumber', e.target.value)} 
+                      placeholder="SN-12345"
+                      className="w-full"
+                    />
+                    <button 
+                      type="button" 
+                      onClick={() => setScannerTarget({ index, field: 'serialNumber' })}
+                      className="btn btn-secondary btn-icon"
+                      title="סרוק ברקוד"
+                    >
+                      <Scan size={18} />
+                    </button>
+                  </div>
                 </div>
 
                 <div className="input-group w-full md:w-80px" style={{ marginBottom: 0 }}>
@@ -177,6 +207,13 @@ const InventoryForm = ({ onAddItem, locations = [] }) => {
           </button>
         </div>
       </form>
+      
+      {scannerTarget && (
+        <BarcodeScanner 
+          onScan={handleScan} 
+          onClose={() => setScannerTarget(null)} 
+        />
+      )}
     </div>
   );
 };

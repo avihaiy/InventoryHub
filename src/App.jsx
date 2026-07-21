@@ -6,6 +6,8 @@ import ExportButton from './components/ExportButton';
 import Login from './components/Login';
 import UserManagement from './components/UserManagement';
 import LocationManagement from './components/LocationManagement';
+import Dashboard from './components/Dashboard';
+import ActivityLog from './components/ActivityLog';
 import './index.css';
 
 const DEFAULT_ADMIN = {
@@ -70,8 +72,21 @@ function App() {
     return [];
   });
 
+  const [activityLogs, setActivityLogs] = useState(() => {
+    const saved = localStorage.getItem('inventoryLogs');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {
+        return [];
+      }
+    }
+    return [];
+  });
+
   const [showUserManagement, setShowUserManagement] = useState(false);
   const [showLocationManagement, setShowLocationManagement] = useState(false);
+  const [showActivityLog, setShowActivityLog] = useState(false);
 
   // Save changes to localStorage
   useEffect(() => {
@@ -86,6 +101,22 @@ function App() {
     localStorage.setItem('inventoryLocations', JSON.stringify(locations));
   }, [locations]);
 
+  useEffect(() => {
+    localStorage.setItem('inventoryLogs', JSON.stringify(activityLogs));
+  }, [activityLogs]);
+
+  const logActivity = (action, itemName, details) => {
+    const log = {
+      id: crypto.randomUUID(),
+      action,
+      itemName,
+      details,
+      user: currentUser?.email || 'מערכת',
+      timestamp: new Date().toISOString()
+    };
+    setActivityLogs(prev => [log, ...prev].slice(0, 200)); // שמירת 200 הפעולות האחרונות
+  };
+
   const handleLogin = (user) => {
     setCurrentUser(user);
     localStorage.setItem('currentUser', JSON.stringify(user));
@@ -96,18 +127,22 @@ function App() {
     localStorage.removeItem('currentUser');
     setShowUserManagement(false);
     setShowLocationManagement(false);
+    setShowActivityLog(false);
   };
 
   const handleAddItem = (newItems) => {
     if (Array.isArray(newItems)) {
       setItems(prev => [...newItems, ...prev]);
+      logActivity('ADD', newItems[0].itemName, `נוספו ${newItems.length} רשומות חדשות`);
     } else {
       setItems(prev => [newItems, ...prev]);
+      logActivity('ADD', newItems.itemName, `נוסף פריט. אינוונטר: ${newItems.inventoryNumber}`);
     }
   };
 
   const handleUpdateItem = (updatedItem) => {
     setItems(prev => prev.map(item => item.id === updatedItem.id ? updatedItem : item));
+    logActivity('UPDATE', updatedItem.itemName, `עודכן פריט. אינוונטר: ${updatedItem.inventoryNumber}`);
   };
 
   const handleDeleteItem = (id) => {
@@ -117,7 +152,11 @@ function App() {
     }
     
     if (window.confirm('האם אתה בטוח שברצונך למחוק פריט זה?')) {
+      const itemToDelete = items.find(item => item.id === id);
       setItems(prev => prev.filter(item => item.id !== id));
+      if (itemToDelete) {
+        logActivity('DELETE', itemToDelete.itemName, `נמחק פריט. אינוונטר: ${itemToDelete.inventoryNumber}`);
+      }
     }
   };
 
@@ -160,7 +199,7 @@ function App() {
           {currentUser.role === 'admin' && (
             <>
               <button 
-                onClick={() => { setShowLocationManagement(true); setShowUserManagement(false); }} 
+                onClick={() => { setShowLocationManagement(true); setShowUserManagement(false); setShowActivityLog(false); }} 
                 className={`btn ${showLocationManagement ? 'btn-primary' : 'btn-secondary'} btn-icon`}
                 title="ניהול מיקומים"
               >
@@ -168,16 +207,24 @@ function App() {
                 <span className="hide-on-mobile">מיקומים</span>
               </button>
               <button 
-                onClick={() => { setShowUserManagement(true); setShowLocationManagement(false); }} 
+                onClick={() => { setShowUserManagement(true); setShowLocationManagement(false); setShowActivityLog(false); }} 
                 className={`btn ${showUserManagement ? 'btn-primary' : 'btn-secondary'} btn-icon`}
                 title="ניהול משתמשים"
               >
                 <Users size={20} />
                 <span className="hide-on-mobile">משתמשים</span>
               </button>
+              <button 
+                onClick={() => { setShowActivityLog(true); setShowLocationManagement(false); setShowUserManagement(false); }} 
+                className={`btn ${showActivityLog ? 'btn-primary' : 'btn-secondary'} btn-icon`}
+                title="יומן פעולות"
+              >
+                <Activity size={20} />
+                <span className="hide-on-mobile">פעולות</span>
+              </button>
             </>
           )}
-          {!showUserManagement && !showLocationManagement && <ExportButton items={items} />}
+          {!showUserManagement && !showLocationManagement && !showActivityLog && <ExportButton items={items} />}
           <button onClick={handleLogout} className="btn btn-danger btn-icon">
             <LogOut size={20} />
             <span className="hide-on-mobile">התנתק</span>
@@ -200,8 +247,14 @@ function App() {
             onDeleteLocation={handleDeleteLocation}
             onBack={() => setShowLocationManagement(false)}
           />
+        ) : showActivityLog && currentUser.role === 'admin' ? (
+          <ActivityLog 
+            logs={activityLogs} 
+            onClear={() => window.confirm('למחוק את כל היסטוריית הפעולות?') && setActivityLogs([])} 
+          />
         ) : (
           <>
+            <Dashboard items={items} locations={locations} />
             <InventoryForm onAddItem={handleAddItem} locations={locations} />
             <InventoryTable 
               items={items} 
