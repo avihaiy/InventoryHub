@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Lock, User, KeyRound, LogIn } from 'lucide-react';
 
-const Login = ({ onLogin }) => {
+const Login = ({ users, onLogin }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -9,9 +9,11 @@ const Login = ({ onLogin }) => {
   const handleSubmit = (e) => {
     e.preventDefault();
     
-    // Hardcoded credentials
-    if (email === 'avihai@akko.muni.il' && password === 'As0546526856') {
-      onLogin();
+    // Find user in the database
+    const user = users.find(u => u.email === email && u.password === password);
+    
+    if (user) {
+      onLogin(user);
     } else {
       setError('שם משתמש או סיסמה שגויים');
     }

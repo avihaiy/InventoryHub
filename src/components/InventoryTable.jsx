@@ -1,7 +1,7 @@
 import React from 'react';
 import { Trash2, BoxSelect } from 'lucide-react';
 
-const InventoryTable = ({ items, onDeleteItem }) => {
+const InventoryTable = ({ items, onDeleteItem, userRole }) => {
   if (!items || items.length === 0) {
     return (
       <div className="card mt-4 animate-slide-in" style={{ animationDelay: '0.1s' }}>
@@ -27,7 +27,7 @@ const InventoryTable = ({ items, onDeleteItem }) => {
               <th>מספר סריאלי</th>
               <th>מיקום</th>
               <th>כמות</th>
-              <th>פעולות</th>
+              {userRole === 'admin' && <th>פעולות</th>}
             </tr>
           </thead>
           <tbody>
@@ -40,15 +40,17 @@ const InventoryTable = ({ items, onDeleteItem }) => {
                 </td>
                 <td>{item.location || '-'}</td>
                 <td>{item.quantity}</td>
-                <td>
-                  <button 
-                    onClick={() => onDeleteItem(item.id)} 
-                    className="btn btn-danger"
-                    title="מחק פריט"
-                  >
-                    <Trash2 size={16} />
-                  </button>
-                </td>
+                {userRole === 'admin' && (
+                  <td>
+                    <button 
+                      onClick={() => onDeleteItem(item.id)} 
+                      className="btn btn-danger"
+                      title="מחק פריט"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </td>
+                )}
               </tr>
             ))}
           </tbody>
