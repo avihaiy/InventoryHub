@@ -121,8 +121,8 @@ const InventoryForm = ({ onAddItem, locations = [] }) => {
 
           <div className="identifiers-list flex flex-col gap-3 mt-4">
             {identifiers.map((identifier, index) => (
-              <div key={index} className="identifier-row flex gap-3 items-end p-3 rounded-lg" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid var(--border-color)' }}>
-                <div className="input-group" style={{ marginBottom: 0, flex: 1 }}>
+              <div key={index} className="identifier-row flex flex-col md:flex-row gap-3 md:items-end p-3 rounded-lg" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid var(--border-color)' }}>
+                <div className="input-group w-full" style={{ marginBottom: 0, flex: 1 }}>
                   <label>מספר אינוונטר</label>
                   <input 
                     type="text" 
@@ -133,7 +133,7 @@ const InventoryForm = ({ onAddItem, locations = [] }) => {
                   />
                 </div>
                 
-                <div className="input-group" style={{ marginBottom: 0, flex: 1 }}>
+                <div className="input-group w-full" style={{ marginBottom: 0, flex: 1 }}>
                   <label>מספר סריאלי (אופציונלי)</label>
                   <input 
                     type="text" 
@@ -143,7 +143,7 @@ const InventoryForm = ({ onAddItem, locations = [] }) => {
                   />
                 </div>
 
-                <div className="input-group" style={{ marginBottom: 0, width: '80px' }}>
+                <div className="input-group w-full md:w-80px" style={{ marginBottom: 0 }}>
                   <label>כמות</label>
                   <input 
                     type="number" 
@@ -157,12 +157,13 @@ const InventoryForm = ({ onAddItem, locations = [] }) => {
                 <button 
                   type="button" 
                   onClick={() => removeIdentifierRow(index)}
-                  className="btn btn-danger btn-icon"
+                  className="btn btn-danger btn-icon w-full md:w-auto mt-2 md:mt-0"
                   disabled={identifiers.length === 1}
                   style={{ opacity: identifiers.length === 1 ? 0.5 : 1 }}
                   title="הסר שורה"
                 >
                   <Minus size={18} />
+                  <span className="md:hidden">הסר מזהה זה</span>
                 </button>
               </div>
             ))}

@@ -520,6 +520,10 @@ tbody tr {
 
 @media (min-width: 768px) {
   .md\:w-auto { width: auto; }
+  .md\:flex-row { flex-direction: row; }
+  .md\:items-end { align-items: flex-end; }
+  .md\:w-80px { width: 80px !important; }
+  .md\:hidden { display: none; }
 }
 
 /* Animations */
