@@ -52,6 +52,8 @@ body {
   align-items: center;
   padding-bottom: 1rem;
   border-bottom: 1px solid var(--border-color);
+  flex-wrap: wrap;
+  gap: 1rem;
 }
 
 .header h1 {
@@ -63,6 +65,12 @@ body {
   display: flex;
   align-items: center;
   gap: 0.75rem;
+}
+
+.header-actions {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
 }
 
 /* Glassmorphism Cards */
@@ -97,6 +105,7 @@ body {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
+  margin-bottom: 1.25rem;
 }
 
 .input-group label {
@@ -115,11 +124,40 @@ body {
   font-size: 1rem;
   transition: var(--transition);
   outline: none;
+  width: 100%;
 }
 
 .input-group input:focus {
   border-color: var(--accent-color);
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+}
+
+.input-with-icon {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.input-with-icon .input-icon {
+  position: absolute;
+  right: 1rem;
+  color: var(--text-secondary);
+  pointer-events: none;
+}
+
+.input-with-icon input {
+  padding-right: 2.75rem;
+}
+
+/* Specifically for LTR inputs in RTL layout */
+.input-with-icon input[dir="ltr"] {
+  padding-left: 2.75rem;
+  padding-right: 1rem;
+}
+
+.input-with-icon input[dir="ltr"] + .input-icon {
+  left: 1rem;
+  right: auto;
 }
 
 .btn {
@@ -170,6 +208,10 @@ body {
 .btn-danger:hover {
   background: #ef4444;
   color: white;
+}
+
+.btn-icon {
+  padding: 0.75rem 1.25rem;
 }
 
 .form-actions {
@@ -225,6 +267,69 @@ tbody tr:hover {
 
 .empty-state svg {
   color: var(--border-color);
+}
+
+/* Login specific styles */
+.login-container {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.login-card {
+  width: 100%;
+  max-width: 420px;
+  padding: 2.5rem;
+}
+
+.login-header {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.login-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: rgba(59, 130, 246, 0.1);
+  color: var(--accent-color);
+  margin-bottom: 1rem;
+}
+
+.login-header h2 {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 0.5rem;
+}
+
+.login-header p {
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+}
+
+.login-btn {
+  width: 100%;
+  margin-top: 1rem;
+  padding: 0.875rem;
+  font-size: 1.1rem;
+}
+
+.error-message {
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+  padding: 0.75rem;
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  margin-bottom: 1.5rem;
+  text-align: center;
+  font-size: 0.9rem;
+  animation: slideIn 0.3s ease-out forwards;
 }
 
 /* Utilities */
