@@ -104,7 +104,7 @@ const InventoryForm = ({ onAddItem, locations = [] }) => {
         </div>
 
         <div className="identifiers-section mt-4">
-          <div className="flex justify-between items-center mb-2 border-b border-gray-700 pb-2">
+          <div className="flex flex-col md:flex-row md:justify-between items-start md:items-center gap-3 mb-2 border-b border-gray-700 pb-2">
             <h3 className="text-sm font-semibold text-secondary flex items-center gap-2">
               <Hash size={16} />
               מזהי פריטים (סך הכל: {identifiers.length})
@@ -112,7 +112,7 @@ const InventoryForm = ({ onAddItem, locations = [] }) => {
             <button 
               type="button" 
               onClick={addIdentifierRow}
-              className="btn btn-secondary btn-sm flex items-center gap-1"
+              className="btn btn-secondary btn-sm w-full md:w-auto flex items-center justify-center gap-2"
             >
               <Plus size={16} />
               הוסף שורה
