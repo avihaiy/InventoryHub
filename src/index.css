@@ -251,8 +251,34 @@ tbody tr {
   transition: var(--transition);
 }
 
-tbody tr:hover {
-  background: rgba(255, 255, 255, 0.03);
+.group-row {
+  cursor: pointer;
+  background: rgba(255, 255, 255, 0.02);
+  transition: var(--transition);
+}
+
+.group-row:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.child-row {
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.child-row:hover {
+  background: rgba(0, 0, 0, 0.4);
+}
+
+.quantity-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--accent-color);
+  color: white;
+  border-radius: 9999px;
+  padding: 0.25rem 0.75rem;
+  font-weight: 700;
+  font-size: 0.9rem;
 }
 
 .edit-input {
