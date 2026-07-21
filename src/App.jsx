@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { PackageSearch, LogOut, Users } from 'lucide-react';
+import { PackageSearch, LogOut, Users, MapPin } from 'lucide-react';
 import InventoryForm from './components/InventoryForm';
 import InventoryTable from './components/InventoryTable';
 import ExportButton from './components/ExportButton';
 import Login from './components/Login';
 import UserManagement from './components/UserManagement';
+import LocationManagement from './components/LocationManagement';
 import './index.css';
 
 const DEFAULT_ADMIN = {
@@ -57,7 +58,20 @@ function App() {
     return [];
   });
 
+  const [locations, setLocations] = useState(() => {
+    const saved = localStorage.getItem('inventoryLocations');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {
+        return [];
+      }
+    }
+    return [];
+  });
+
   const [showUserManagement, setShowUserManagement] = useState(false);
+  const [showLocationManagement, setShowLocationManagement] = useState(false);
 
   // Save changes to localStorage
   useEffect(() => {
@@ -68,6 +82,10 @@ function App() {
     localStorage.setItem('inventoryUsers', JSON.stringify(users));
   }, [users]);
 
+  useEffect(() => {
+    localStorage.setItem('inventoryLocations', JSON.stringify(locations));
+  }, [locations]);
+
   const handleLogin = (user) => {
     setCurrentUser(user);
     localStorage.setItem('currentUser', JSON.stringify(user));
@@ -77,6 +95,7 @@ function App() {
     setCurrentUser(null);
     localStorage.removeItem('currentUser');
     setShowUserManagement(false);
+    setShowLocationManagement(false);
   };
 
   const handleAddItem = (newItems) => {
@@ -114,6 +133,14 @@ function App() {
     }
   };
 
+  const handleAddLocation = (newLocation) => {
+    setLocations(prev => [...prev, newLocation]);
+  };
+
+  const handleDeleteLocation = (id) => {
+    setLocations(prev => prev.filter(loc => loc.id !== id));
+  };
+
   if (!currentUser) {
     return <Login users={users} onLogin={handleLogin} />;
   }
@@ -127,16 +154,26 @@ function App() {
         </h1>
         <div className="header-actions">
           {currentUser.role === 'admin' && (
-            <button 
-              onClick={() => setShowUserManagement(!showUserManagement)} 
-              className={`btn ${showUserManagement ? 'btn-primary' : 'btn-secondary'} btn-icon`}
-              title="ניהול משתמשים"
-            >
-              <Users size={20} />
-              <span className="hide-on-mobile">משתמשים</span>
-            </button>
+            <>
+              <button 
+                onClick={() => { setShowLocationManagement(true); setShowUserManagement(false); }} 
+                className={`btn ${showLocationManagement ? 'btn-primary' : 'btn-secondary'} btn-icon`}
+                title="ניהול מיקומים"
+              >
+                <MapPin size={20} />
+                <span className="hide-on-mobile">מיקומים</span>
+              </button>
+              <button 
+                onClick={() => { setShowUserManagement(true); setShowLocationManagement(false); }} 
+                className={`btn ${showUserManagement ? 'btn-primary' : 'btn-secondary'} btn-icon`}
+                title="ניהול משתמשים"
+              >
+                <Users size={20} />
+                <span className="hide-on-mobile">משתמשים</span>
+              </button>
+            </>
           )}
-          {!showUserManagement && <ExportButton items={items} />}
+          {!showUserManagement && !showLocationManagement && <ExportButton items={items} />}
           <button onClick={handleLogout} className="btn btn-danger btn-icon">
             <LogOut size={20} />
             <span className="hide-on-mobile">התנתק</span>
@@ -152,9 +189,16 @@ function App() {
             onDeleteUser={handleDeleteUser}
             onBack={() => setShowUserManagement(false)}
           />
+        ) : showLocationManagement && currentUser.role === 'admin' ? (
+          <LocationManagement 
+            locations={locations} 
+            onAddLocation={handleAddLocation} 
+            onDeleteLocation={handleDeleteLocation}
+            onBack={() => setShowLocationManagement(false)}
+          />
         ) : (
           <>
-            <InventoryForm onAddItem={handleAddItem} />
+            <InventoryForm onAddItem={handleAddItem} locations={locations} />
             <InventoryTable 
               items={items} 
               onDeleteItem={handleDeleteItem} 

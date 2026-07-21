@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { PackagePlus, Plus, Minus, Hash } from 'lucide-react';
 
-const InventoryForm = ({ onAddItem }) => {
+const InventoryForm = ({ onAddItem, locations = [] }) => {
   const [itemName, setItemName] = useState('');
   const [location, setLocation] = useState('');
   const [identifiers, setIdentifiers] = useState([
@@ -92,8 +92,14 @@ const InventoryForm = ({ onAddItem }) => {
               id="location" 
               value={location} 
               onChange={(e) => setLocation(e.target.value)} 
-              placeholder="לדוגמה: ארון 4, מדף ב'" 
+              placeholder="לדוגמה: ארון 4, מדף ב'"
+              list="locations-list"
             />
+            <datalist id="locations-list">
+              {locations.map(loc => (
+                <option key={loc.id} value={loc.name} />
+              ))}
+            </datalist>
           </div>
         </div>
 
