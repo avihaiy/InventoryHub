@@ -87,19 +87,19 @@ const InventoryForm = ({ onAddItem, locations = [] }) => {
           
           <div className="input-group">
             <label htmlFor="location">מיקום</label>
-            <input 
-              type="text" 
+            <select 
               id="location" 
               value={location} 
               onChange={(e) => setLocation(e.target.value)} 
-              placeholder="לדוגמה: ארון 4, מדף ב'"
-              list="locations-list"
-            />
-            <datalist id="locations-list">
+              className="custom-select"
+              required
+            >
+              <option value="" disabled>בחר מיקום...</option>
+              {locations.length === 0 && <option value="" disabled>לא הוגדרו מיקומים במערכת</option>}
               {locations.map(loc => (
-                <option key={loc.id} value={loc.name} />
+                <option key={loc.id} value={loc.name}>{loc.name}</option>
               ))}
-            </datalist>
+            </select>
           </div>
         </div>
 
