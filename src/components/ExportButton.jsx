@@ -9,15 +9,47 @@ const ExportButton = ({ items }) => {
       return;
     }
 
-    // Prepare data for Excel
-    const dataToExport = items.map(item => ({
-      'שם הפריט': item.itemName,
-      'מספר אינוונטר': item.inventoryNumber,
-      'מספר סריאלי': item.serialNumber || '',
-      'מיקום': item.location || '',
-      'כמות': item.quantity,
-      'תאריך הוספה': new Date(item.createdAt).toLocaleDateString('he-IL')
-    }));
+    // Group items by itemName and location
+    const groupedItems = items.reduce((acc, item) => {
+      const key = `${item.itemName}::${item.location || ''}`;
+      if (!acc[key]) {
+        acc[key] = {
+          itemName: item.itemName,
+          location: item.location,
+          totalQuantity: 0,
+          items: []
+        };
+      }
+      acc[key].totalQuantity += parseInt(item.quantity) || 1;
+      acc[key].items.push(item);
+      return acc;
+    }, {});
+
+    // Prepare data for Excel in a grouped visual layout
+    const dataToExport = [];
+    Object.values(groupedItems).forEach(group => {
+      // Master group row
+      dataToExport.push({
+        'שם הפריט': group.itemName,
+        'מספר אינוונטר': '-',
+        'מספר סריאלי': '-',
+        'מיקום': group.location || '',
+        'כמות': group.totalQuantity,
+        'תאריך הוספה': '-'
+      });
+      
+      // Child detail rows
+      group.items.forEach(item => {
+        dataToExport.push({
+          'שם הפריט': '  ↳ פירוט',
+          'מספר אינוונטר': item.inventoryNumber,
+          'מספר סריאלי': item.serialNumber || '-',
+          'מיקום': '-',
+          'כמות': item.quantity,
+          'תאריך הוספה': new Date(item.createdAt).toLocaleDateString('he-IL')
+        });
+      });
+    });
 
     // Create a new workbook and worksheet
     const worksheet = XLSX.utils.json_to_sheet(dataToExport);
