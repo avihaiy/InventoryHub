@@ -79,8 +79,12 @@ function App() {
     setShowUserManagement(false);
   };
 
-  const handleAddItem = (newItem) => {
-    setItems(prev => [newItem, ...prev]);
+  const handleAddItem = (newItems) => {
+    if (Array.isArray(newItems)) {
+      setItems(prev => [...newItems, ...prev]);
+    } else {
+      setItems(prev => [newItems, ...prev]);
+    }
   };
 
   const handleDeleteItem = (id) => {
