@@ -2,6 +2,13 @@ import React, { useState } from 'react';
 import { PackagePlus, Plus, Minus, Hash, Scan } from 'lucide-react';
 import BarcodeScanner from './BarcodeScanner';
 
+const generateId = () => {
+  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+    return crypto.randomUUID();
+  }
+  return Date.now().toString(36) + Math.random().toString(36).substring(2);
+};
+
 const InventoryForm = ({ onAddItem, locations = [] }) => {
   const [itemName, setItemName] = useState('');
   const [location, setLocation] = useState('');
@@ -53,7 +60,7 @@ const InventoryForm = ({ onAddItem, locations = [] }) => {
     }
 
     const newItems = validIdentifiers.map(id => ({
-      id: crypto.randomUUID(),
+      id: generateId(),
       itemName,
       location,
       inventoryNumber: id.inventoryNumber,

@@ -54,18 +54,19 @@ const InventoryTable = ({ items, onDeleteItem, onUpdateItem, userRole, locations
   // Filter items based on search term
   const filteredItems = items.filter(item => {
     if (!searchTerm) return true;
-    const term = searchTerm.toLowerCase();
+    const term = String(searchTerm).toLowerCase();
     return (
-      (item.itemName && item.itemName.toLowerCase().includes(term)) ||
-      (item.inventoryNumber && item.inventoryNumber.toLowerCase().includes(term)) ||
-      (item.serialNumber && item.serialNumber.toLowerCase().includes(term)) ||
-      (item.location && item.location.toLowerCase().includes(term))
+      (item?.itemName && String(item.itemName).toLowerCase().includes(term)) ||
+      (item?.inventoryNumber && String(item.inventoryNumber).toLowerCase().includes(term)) ||
+      (item?.serialNumber && String(item.serialNumber).toLowerCase().includes(term)) ||
+      (item?.location && String(item.location).toLowerCase().includes(term))
     );
   });
 
   // Group items by itemName and location
   const groupedItems = filteredItems.reduce((acc, item) => {
-    const key = `${item.itemName}::${item.location || ''}`;
+    if (!item) return acc;
+    const key = `${item.itemName || 'ללא שם'}::${item.location || ''}`;
     if (!acc[key]) {
       acc[key] = {
         id: key,

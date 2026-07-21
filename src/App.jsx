@@ -18,6 +18,13 @@ const DEFAULT_ADMIN = {
   createdAt: new Date().toISOString()
 };
 
+const generateId = () => {
+  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+    return crypto.randomUUID();
+  }
+  return Date.now().toString(36) + Math.random().toString(36).substring(2);
+};
+
 function App() {
   const [currentUser, setCurrentUser] = useState(() => {
     const saved = localStorage.getItem('currentUser');
@@ -107,7 +114,7 @@ function App() {
 
   const logActivity = (action, itemName, details) => {
     const log = {
-      id: crypto.randomUUID(),
+      id: generateId(),
       action,
       itemName,
       details,

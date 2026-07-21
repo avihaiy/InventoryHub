@@ -4,12 +4,13 @@ import { Package, Hash, MapPin } from 'lucide-react';
 
 const Dashboard = ({ items, locations }) => {
   const stats = useMemo(() => {
-    const totalUnits = items.reduce((sum, item) => sum + (parseInt(item.quantity) || 1), 0);
+    const totalUnits = items.reduce((sum, item) => sum + (parseInt(item?.quantity) || 1), 0);
     const uniqueRecords = items.length;
-    const uniqueItemsTypes = new Set(items.map(i => i.itemName)).size;
+    const uniqueItemsTypes = new Set(items.map(i => i?.itemName || 'ללא שם')).size;
 
     // Group for chart
     const locationCounts = items.reduce((acc, item) => {
+      if (!item) return acc;
       const loc = item.location || 'ללא מיקום';
       if (!acc[loc]) {
         acc[loc] = 0;
