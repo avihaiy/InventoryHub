@@ -5,17 +5,21 @@ const InventoryForm = ({ onAddItem }) => {
   const [itemName, setItemName] = useState('');
   const [location, setLocation] = useState('');
   const [identifiers, setIdentifiers] = useState([
-    { inventoryNumber: '', serialNumber: '' }
+    { inventoryNumber: '', serialNumber: '', quantity: 1 }
   ]);
 
   const handleIdentifierChange = (index, field, value) => {
     const newIdentifiers = [...identifiers];
-    newIdentifiers[index][field] = value;
+    if (field === 'quantity') {
+      newIdentifiers[index][field] = parseInt(value) || 1;
+    } else {
+      newIdentifiers[index][field] = value;
+    }
     setIdentifiers(newIdentifiers);
   };
 
   const addIdentifierRow = () => {
-    setIdentifiers([...identifiers, { inventoryNumber: '', serialNumber: '' }]);
+    setIdentifiers([...identifiers, { inventoryNumber: '', serialNumber: '', quantity: 1 }]);
   };
 
   const removeIdentifierRow = (index) => {
@@ -46,7 +50,7 @@ const InventoryForm = ({ onAddItem }) => {
       location,
       inventoryNumber: id.inventoryNumber,
       serialNumber: id.serialNumber,
-      quantity: 1, // Each unique inventory number is exactly 1 physical item
+      quantity: id.quantity || 1,
       createdAt: new Date().toISOString()
     }));
     
@@ -55,8 +59,10 @@ const InventoryForm = ({ onAddItem }) => {
     // Reset form
     setItemName('');
     setLocation('');
-    setIdentifiers([{ inventoryNumber: '', serialNumber: '' }]);
+    setIdentifiers([{ inventoryNumber: '', serialNumber: '', quantity: 1 }]);
   };
+
+  const totalQuantity = identifiers.reduce((sum, id) => sum + (parseInt(id.quantity) || 1), 0);
 
   return (
     <div className="card animate-slide-in">
@@ -131,6 +137,17 @@ const InventoryForm = ({ onAddItem }) => {
                   />
                 </div>
 
+                <div className="input-group" style={{ marginBottom: 0, width: '80px' }}>
+                  <label>כמות</label>
+                  <input 
+                    type="number" 
+                    min="1"
+                    value={identifier.quantity} 
+                    onChange={(e) => handleIdentifierChange(index, 'quantity', e.target.value)} 
+                    required
+                  />
+                </div>
+
                 <button 
                   type="button" 
                   onClick={() => removeIdentifierRow(index)}
@@ -149,7 +166,7 @@ const InventoryForm = ({ onAddItem }) => {
         <div className="form-actions mt-8">
           <button type="submit" className="btn btn-primary w-full md:w-auto">
             <PackagePlus size={20} />
-            הוסף {identifiers.length} פריט/ים למלאי
+            הוסף {totalQuantity} פריט/ים למלאי
           </button>
         </div>
       </form>
