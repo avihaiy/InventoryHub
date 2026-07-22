@@ -275,6 +275,7 @@ function App() {
 
   return (
     <div className="app-container">
+      <div className="text-secondary text-sm mb-2" style={{ textAlign: 'right' }}>בס"ד</div>
       <header className="header animate-slide-in">
         <h1>
           <PackageSearch size={36} className="text-accent" />

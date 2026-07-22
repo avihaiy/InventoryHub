@@ -39,11 +39,11 @@ const ActivityLog = ({ logs, onClear }) => {
 
   return (
     <div className="card mt-4 animate-slide-in">
-      <div className="flex justify-between items-center mb-4">
+      <div className="flex flex-wrap justify-between items-center gap-4 mb-4">
         <h2 className="card-title mb-0"><Activity size={24} className="text-accent" /> יומן פעולות ({logs.length})</h2>
         {onClear && (
           <button onClick={onClear} className="btn btn-secondary btn-sm flex items-center gap-2">
-            <Trash2 size={16} /> נקה יומן
+            <Trash2 size={16} /> <span className="hide-on-mobile">נקה יומן</span>
           </button>
         )}
       </div>
