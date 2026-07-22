@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Edit2, Trash2, Save, X, Search, ChevronDown, ChevronLeft, ChevronUp, BoxSelect, Plus, Minus } from 'lucide-react';
 
-const InventoryTable = ({ items, onDeleteItem, onUpdateItem, userRole, locations = [] }) => {
+const InventoryTable = ({ items, onDeleteItem, onUpdateItem, onAddChild, userRole, locations = [] }) => {
   const [editingId, setEditingId] = useState(null);
   const [editFormData, setEditFormData] = useState({});
   const [expandedGroups, setExpandedGroups] = useState({});
@@ -124,6 +124,7 @@ const InventoryTable = ({ items, onDeleteItem, onUpdateItem, userRole, locations
               <th>מספר אינוונטר</th>
               <th>מספר סריאלי</th>
               <th>מיקום</th>
+              <th>הערות</th>
               <th>כמות</th>
               {userRole === 'admin' && <th>פעולות</th>}
             </tr>
@@ -146,6 +147,7 @@ const InventoryTable = ({ items, onDeleteItem, onUpdateItem, userRole, locations
                   <td style={{ color: 'var(--text-secondary)' }}>-</td>
                   <td style={{ color: 'var(--text-secondary)' }}>-</td>
                   <td style={{ fontWeight: 500 }}>{group.location || '-'}</td>
+                  <td style={{ color: 'var(--text-secondary)' }}>-</td>
                   <td>
                     {(() => {
                       const overall = itemOverallTotals[group.itemName] || { total: 0, minQuantity: 0 };
@@ -160,7 +162,18 @@ const InventoryTable = ({ items, onDeleteItem, onUpdateItem, userRole, locations
                       );
                     })()}
                   </td>
-                  {userRole === 'admin' && <td></td>}
+                  {userRole === 'admin' && (
+                    <td className="text-left" style={{ paddingLeft: '1rem' }}>
+                      <button 
+                        onClick={(e) => { e.stopPropagation(); onAddChild && onAddChild(group); }} 
+                        className="btn btn-secondary btn-sm"
+                        title="הוסף פריט חדש לסוג זה"
+                        style={{ padding: '4px 8px' }}
+                      >
+                        <Plus size={16} />
+                      </button>
+                    </td>
+                  )}
                 </tr>
 
                 {/* Expanded Child Rows */}
@@ -209,6 +222,16 @@ const InventoryTable = ({ items, onDeleteItem, onUpdateItem, userRole, locations
                               <option key={loc.id} value={loc.name}>{loc.name}</option>
                             ))}
                           </select>
+                        </td>
+                        <td>
+                          <input 
+                            type="text" 
+                            name="notes" 
+                            value={editFormData.notes || ''} 
+                            onChange={handleChange} 
+                            className="edit-input" 
+                            placeholder="הערות..."
+                          />
                         </td>
                         <td>
                           <div className="flex flex-col gap-1">
@@ -264,6 +287,11 @@ const InventoryTable = ({ items, onDeleteItem, onUpdateItem, userRole, locations
                           {item.serialNumber || '-'}
                         </td>
                         <td style={{ color: 'var(--text-secondary)' }}>{item.location || '-'}</td>
+                        <td>
+                          <div className="text-secondary truncate" style={{ maxWidth: '150px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={item.notes || ''}>
+                            {item.notes || '-'}
+                          </div>
+                        </td>
                         <td>
                           <div className="flex flex-col">
                             <div className="flex items-center gap-2">

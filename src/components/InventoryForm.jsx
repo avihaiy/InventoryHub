@@ -12,6 +12,7 @@ const generateId = () => {
 const InventoryForm = ({ onAddItem, locations = [], initialValues = null, existingItems = [] }) => {
   const [itemName, setItemName] = useState(initialValues?.itemName || '');
   const [location, setLocation] = useState(initialValues?.location || '');
+  const [notes, setNotes] = useState(initialValues?.notes || '');
   const [minQuantity, setMinQuantity] = useState(initialValues?.minQuantity || 0);
   const [identifiers, setIdentifiers] = useState([
     { inventoryNumber: '', serialNumber: '', quantity: 1 }
@@ -85,6 +86,7 @@ const InventoryForm = ({ onAddItem, locations = [], initialValues = null, existi
       serialNumber: id.serialNumber,
       quantity: id.quantity || 1,
       minQuantity: parseInt(minQuantity) || 0,
+      notes: notes,
       createdAt: new Date().toISOString()
     }));
     
@@ -93,6 +95,7 @@ const InventoryForm = ({ onAddItem, locations = [], initialValues = null, existi
     // Reset form
     setItemName('');
     setLocation('');
+    setNotes('');
     setMinQuantity(0);
     setIdentifiers([{ inventoryNumber: '', serialNumber: '', quantity: 1 }]);
   };
@@ -155,6 +158,27 @@ const InventoryForm = ({ onAddItem, locations = [], initialValues = null, existi
               min="0"
             />
           </div>
+        </div>
+
+        <div className="input-group mb-4">
+          <label htmlFor="notes">הערות</label>
+          <textarea 
+            id="notes" 
+            value={notes} 
+            onChange={(e) => setNotes(e.target.value)} 
+            placeholder="פירוט נוסף, מצב הפריט, שיוך לעובד, וכו'..."
+            rows="2"
+            style={{ 
+              background: 'var(--bg-input)', 
+              border: '1px solid var(--border-color)',
+              color: 'var(--text-primary)',
+              padding: '0.75rem 1rem',
+              borderRadius: 'var(--radius-md)',
+              fontFamily: 'inherit',
+              width: '100%',
+              resize: 'vertical'
+            }}
+          />
         </div>
 
         <div className="identifiers-section mt-4">
