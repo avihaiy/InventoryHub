@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Trash2, BoxSelect, Edit2, Save, X, ChevronDown, ChevronLeft, Search } from 'lucide-react';
+import { Edit2, Trash2, Save, X, Search, ChevronDown, ChevronLeft, ChevronUp, BoxSelect, Plus, Minus } from 'lucide-react';
 
 const InventoryTable = ({ items, onDeleteItem, onUpdateItem, userRole, locations = [] }) => {
   const [editingId, setEditingId] = useState(null);
@@ -266,8 +266,30 @@ const InventoryTable = ({ items, onDeleteItem, onUpdateItem, userRole, locations
                         <td style={{ color: 'var(--text-secondary)' }}>{item.location || '-'}</td>
                         <td>
                           <div className="flex flex-col">
-                            <span className="font-semibold text-accent">{item.quantity}</span>
-                            {item.minQuantity > 0 && <span className="text-[10px] text-gray-500">התראה מ-{item.minQuantity}</span>}
+                            <div className="flex items-center gap-2">
+                              {userRole === 'admin' && (
+                                <button 
+                                  onClick={() => item.quantity > 1 && onUpdateItem({...item, quantity: parseInt(item.quantity) - 1})}
+                                  className="btn btn-icon text-gray-400 hover:text-white"
+                                  style={{ padding: '2px', background: 'rgba(255,255,255,0.05)', minWidth: '24px', height: '24px' }}
+                                  title="הפחת כמות"
+                                >
+                                  <Minus size={14} />
+                                </button>
+                              )}
+                              <span className="font-semibold text-accent text-base">{item.quantity}</span>
+                              {userRole === 'admin' && (
+                                <button 
+                                  onClick={() => onUpdateItem({...item, quantity: parseInt(item.quantity) + 1})}
+                                  className="btn btn-icon text-gray-400 hover:text-white"
+                                  style={{ padding: '2px', background: 'rgba(255,255,255,0.05)', minWidth: '24px', height: '24px' }}
+                                  title="הוסף כמות"
+                                >
+                                  <Plus size={14} />
+                                </button>
+                              )}
+                            </div>
+                            {item.minQuantity > 0 && <span className="text-[10px] text-gray-500 mt-1">התראה מ-{item.minQuantity}</span>}
                           </div>
                         </td>
                         {userRole === 'admin' && (
