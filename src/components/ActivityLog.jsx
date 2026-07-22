@@ -1,5 +1,5 @@
 import React from 'react';
-import { Activity, Plus, Edit2, Trash2, Clock } from 'lucide-react';
+import { Activity, Plus, Edit2, Trash2, Clock, LogIn } from 'lucide-react';
 
 const ActionIcon = ({ action }) => {
   switch (action) {
@@ -9,6 +9,8 @@ const ActionIcon = ({ action }) => {
       return <div className="p-2 rounded-full" style={{ background: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6' }}><Edit2 size={16} /></div>;
     case 'DELETE':
       return <div className="p-2 rounded-full" style={{ background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444' }}><Trash2 size={16} /></div>;
+    case 'LOGIN':
+      return <div className="p-2 rounded-full" style={{ background: 'rgba(168, 85, 247, 0.1)', color: '#a855f7' }}><LogIn size={16} /></div>;
     default:
       return <div className="p-2 rounded-full" style={{ background: 'rgba(148, 163, 184, 0.1)', color: '#94a3b8' }}><Activity size={16} /></div>;
   }
@@ -19,6 +21,7 @@ const ActionText = ({ action }) => {
     case 'ADD': return <span style={{ color: '#10b981', fontWeight: 600 }}>הוסיף/ה</span>;
     case 'UPDATE': return <span style={{ color: '#3b82f6', fontWeight: 600 }}>עדכן/ה</span>;
     case 'DELETE': return <span style={{ color: '#ef4444', fontWeight: 600 }}>מחק/ה</span>;
+    case 'LOGIN': return <span style={{ color: '#a855f7', fontWeight: 600 }}>התחבר/ה למערכת</span>;
     default: return <span>ביצע/ה פעולה</span>;
   }
 };
@@ -57,7 +60,10 @@ const ActivityLog = ({ logs, onClear }) => {
               <div className="flex-1">
                 <div className="flex justify-between items-start">
                   <div style={{ fontSize: '0.95rem' }}>
-                    <strong>{log.user}</strong> <ActionText action={log.action} /> את הפריט <strong>{log.itemName}</strong>
+                    <strong>{log.user}</strong> <ActionText action={log.action} /> 
+                    {log.action !== 'LOGIN' && (
+                      <span> את הפריט <strong>{log.itemName}</strong></span>
+                    )}
                   </div>
                   <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
                     {new Date(log.timestamp).toLocaleString('he-IL')}

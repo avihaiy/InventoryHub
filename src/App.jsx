@@ -211,13 +211,13 @@ function App() {
     migrateData();
   }, []);
 
-  const logActivity = async (action, itemName, details) => {
+  const logActivity = async (action, itemName, details, explicitUser = null) => {
     const log = {
       id: generateId(),
       action,
       itemName,
       details,
-      user: currentUser?.email || 'מערכת',
+      user: explicitUser || currentUser?.email || 'מערכת',
       timestamp: new Date().toISOString()
     };
     try {
@@ -236,6 +236,7 @@ function App() {
   const handleLogin = (user) => {
     setCurrentUser(user);
     localStorage.setItem('currentUser', JSON.stringify(user));
+    logActivity('LOGIN', 'התחברות', 'משתמש נכנס למערכת', user.email);
   };
 
   const handleLogout = () => {
