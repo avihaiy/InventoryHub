@@ -2,14 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { Settings as SettingsIcon, MessageCircle, Save, ArrowRight } from 'lucide-react';
 
 const Settings = ({ settings, onSave, onBack }) => {
-  const [phone, setPhone] = useState(settings?.whatsapp_phone || '');
-  const [apikey, setApikey] = useState(settings?.whatsapp_apikey || '');
+  const [telegramToken, setTelegramToken] = useState(settings?.telegram_bot_token || '');
+  const [telegramChatId, setTelegramChatId] = useState(settings?.telegram_chat_id || '');
   const [status, setStatus] = useState('');
 
   useEffect(() => {
     if (settings) {
-      setPhone(settings.whatsapp_phone || '');
-      setApikey(settings.whatsapp_apikey || '');
+      setTelegramToken(settings.telegram_bot_token || '');
+      setTelegramChatId(settings.telegram_chat_id || '');
     }
   }, [settings]);
 
@@ -17,13 +17,10 @@ const Settings = ({ settings, onSave, onBack }) => {
     e.preventDefault();
     setStatus('שומר...');
     
-    // Clean phone number (remove +, spaces, dashes)
-    const cleanPhone = phone.replace(/[\s\-\+]/g, '');
-    
     try {
       await onSave({
-        whatsapp_phone: cleanPhone,
-        whatsapp_apikey: apikey
+        telegram_bot_token: telegramToken.trim(),
+        telegram_chat_id: telegramChatId.trim()
       });
       setStatus('נשמר בהצלחה!');
       setTimeout(() => setStatus(''), 3000);
@@ -33,22 +30,26 @@ const Settings = ({ settings, onSave, onBack }) => {
   };
 
   const handleTestMessage = async () => {
-    if (!phone || !apikey) {
-      alert("יש למלא מספר טלפון ומפתח API תחילה");
+    if (!telegramToken || !telegramChatId) {
+      alert("יש למלא את פרטי הטלגרם תחילה");
       return;
     }
     
     setStatus('שולח הודעת ניסיון...');
-    const text = encodeURIComponent('🤖 הודעת בדיקה ממערכת ניהול המלאי שלך!');
-    const url = `https://api.callmebot.com/whatsapp.php?phone=${phone}&text=${text}&apikey=${apikey}`;
+    const text = encodeURIComponent('🤖 *הודעת בדיקה* ממערכת ניהול המלאי שלך!');
+    const url = `https://api.telegram.org/bot${telegramToken.trim()}/sendMessage?chat_id=${telegramChatId.trim()}&text=${text}&parse_mode=Markdown`;
     
     try {
-      // We use no-cors or just a simple fetch, but CallMeBot returns a simple text page.
-      await fetch(url, { mode: 'no-cors' });
-      setStatus('הודעת הניסיון נשלחה!');
+      const response = await fetch(url);
+      const data = await response.json();
+      if (data.ok) {
+        setStatus('הודעת הניסיון נשלחה!');
+      } else {
+        setStatus('שגיאה: ' + data.description);
+      }
       setTimeout(() => setStatus(''), 3000);
     } catch (e) {
-      setStatus('שגיאה בשליחה.');
+      setStatus('שגיאה בשליחה למול שרתי טלגרם.');
     }
   };
 
@@ -68,33 +69,33 @@ const Settings = ({ settings, onSave, onBack }) => {
       <div className="mb-8 p-4 rounded-lg" style={{ background: 'rgba(59, 130, 246, 0.1)', border: '1px solid rgba(59, 130, 246, 0.2)' }}>
         <h3 className="font-semibold text-lg mb-2 flex items-center gap-2">
           <MessageCircle size={20} className="text-accent" />
-          התראות וואטסאפ אוטומטיות (מלאי חסר)
+          התראות טלגרם אוטומטיות (מלאי חסר)
         </h3>
         <p className="text-secondary text-sm mb-4">
-          לקבלת מפתח API חינמי, שלח הודעת וואטסאפ עם הטקסט: <strong>I allow callmebot to send me messages</strong> 
-          למספר <strong>+34 644 49 53 08</strong>. <br/>
-          הבוט יענה לך עם ה-API Key שלך.
+          כדי לחבר את המערכת לטלגרם, עליך לבצע שני שלבים פשוטים בטלגרם שלך: <br/>
+          1. חפש את הבוט <strong>@BotFather</strong>, שלח לו את הפקודה <code>/newbot</code> וצור בוט. הוא ייתן לך <strong>API Token</strong>. <br/>
+          2. חפש את הבוט <strong>@userinfobot</strong> ושלח לו הודעה, הוא יחזיר לך את מספר ה-<strong>Chat ID</strong> האישי שלך.
         </p>
         
         <form onSubmit={handleSubmit} className="flex flex-col gap-4 max-w-md">
           <div className="input-group" style={{ marginBottom: 0 }}>
-            <label>מספר טלפון (כולל קידומת בינלאומית, למשל 972501234567)</label>
+            <label>Bot API Token (מ-BotFather)</label>
             <input 
               type="text" 
-              value={phone} 
-              onChange={e => setPhone(e.target.value)} 
-              placeholder="9725..."
+              value={telegramToken} 
+              onChange={e => setTelegramToken(e.target.value)} 
+              placeholder="123456789:ABCdefGHIjklMNO..."
               dir="ltr"
             />
           </div>
           
           <div className="input-group" style={{ marginBottom: 0 }}>
-            <label>API Key (סיסמה מהבוט)</label>
+            <label>ה-Chat ID שלך (מ-userinfobot)</label>
             <input 
               type="text" 
-              value={apikey} 
-              onChange={e => setApikey(e.target.value)} 
-              placeholder="123456"
+              value={telegramChatId} 
+              onChange={e => setTelegramChatId(e.target.value)} 
+              placeholder="12345678"
               dir="ltr"
             />
           </div>

@@ -224,10 +224,10 @@ function App() {
         const totalBefore = items.filter(i => i.itemName === updatedItem.itemName).reduce((sum, i) => sum + i.quantity, 0);
         
         if (minQuantity > 0 && totalNow < minQuantity && totalBefore >= minQuantity) {
-          if (settings?.whatsapp_phone && settings?.whatsapp_apikey) {
-            const text = encodeURIComponent(`🚨 *התראת מלאי:* הפריט *${updatedItem.itemName}* ירד מתחת לכמות המינימום (${minQuantity}). כמות נוכחית: ${totalNow}. אנא הזמן מלאי חדש.`);
-            const url = `https://api.callmebot.com/whatsapp.php?phone=${settings.whatsapp_phone}&text=${text}&apikey=${settings.whatsapp_apikey}`;
-            fetch(url, { mode: 'no-cors' }).catch(console.error);
+          if (settings?.telegram_bot_token && settings?.telegram_chat_id) {
+            const text = encodeURIComponent(`🚨 *התראת מלאי:* הפריט *${updatedItem.itemName}* ירד מתחת לכמות המינימום (${minQuantity}). \n\n📦 *כמות נוכחית:* ${totalNow}\n\nאנא הזמן מלאי חדש.`);
+            const url = `https://api.telegram.org/bot${settings.telegram_bot_token}/sendMessage?chat_id=${settings.telegram_chat_id}&text=${text}&parse_mode=Markdown`;
+            fetch(url).catch(console.error);
           }
         }
       } else {
