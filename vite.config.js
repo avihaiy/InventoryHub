@@ -9,8 +9,8 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['icon.svg'],
       manifest: {
-        name: 'InventoryHub',
-        short_name: 'Inventory',
+        name: 'ניהול מלאי',
+        short_name: 'מלאי',
         description: 'מערכת לניהול מלאי',
         theme_color: '#0f172a',
         background_color: '#0f172a',
@@ -19,9 +19,19 @@ export default defineConfig({
         lang: 'he',
         icons: [
           {
-            src: 'icon.svg',
-            sizes: 'any',
-            type: 'image/svg+xml',
+            src: 'icon-192.png',
+            sizes: '192x192',
+            type: 'image/png'
+          },
+          {
+            src: 'icon-512.png',
+            sizes: '512x512',
+            type: 'image/png'
+          },
+          {
+            src: 'icon-512.png',
+            sizes: '512x512',
+            type: 'image/png',
             purpose: 'any maskable'
           }
         ]
