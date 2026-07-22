@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { PackageSearch, LogOut, Users, MapPin, Activity } from 'lucide-react';
+import { PackageSearch, LogOut, Users, MapPin, Activity, Plus } from 'lucide-react';
 import { supabase } from './supabase';
 import InventoryForm from './components/InventoryForm';
 import InventoryTable from './components/InventoryTable';
@@ -339,7 +339,9 @@ function App() {
         ) : (
           <>
             <Dashboard items={items} locations={locations} />
-            <InventoryForm onAddItem={handleAddItem} locations={locations} />
+            <div id="add-item-form-section">
+              <InventoryForm onAddItem={handleAddItem} locations={locations} />
+            </div>
             <InventoryTable 
               items={items} 
               onDeleteItem={handleDeleteItem} 
@@ -347,6 +349,17 @@ function App() {
               userRole={currentUser.role}
               locations={locations}
             />
+            
+            {/* Mobile Floating Action Button */}
+            <button 
+              className="fab-btn md:hidden"
+              onClick={() => {
+                document.getElementById('add-item-form-section')?.scrollIntoView({ behavior: 'smooth' });
+              }}
+              title="הוסף פריט"
+            >
+              <Plus size={28} />
+            </button>
           </>
         )}
       </main>

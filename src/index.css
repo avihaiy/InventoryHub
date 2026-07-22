@@ -584,6 +584,30 @@ tbody tr {
   animation: slideIn 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }
 
+/* Floating Action Button */
+.fab-btn {
+  position: fixed;
+  bottom: 1.5rem;
+  left: 1.5rem;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: var(--accent-color);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 14px rgba(59, 130, 246, 0.4);
+  border: none;
+  cursor: pointer;
+  z-index: 50;
+  transition: var(--transition);
+}
+
+.fab-btn:active {
+  transform: translateY(2px) scale(0.95);
+}
+
 .table-row-animate {
   animation: slideIn 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }
