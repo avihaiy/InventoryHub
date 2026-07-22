@@ -9,16 +9,50 @@ const ExportButton = ({ items }) => {
       return;
     }
 
-    // Prepare data for Excel in a flat layout for easier reading and re-importing
-    const dataToExport = items.map(item => ({
-      'שם הפריט': item.itemName,
-      'מספר אינוונטר': item.inventoryNumber || '',
-      'מספר סריאלי': item.serialNumber || '',
-      'מיקום': item.location || '',
-      'הערות': item.notes || '',
-      'כמות': item.quantity || 1,
-      'תאריך הוספה': new Date(item.createdAt).toLocaleDateString('he-IL')
-    }));
+    // Group items by itemName
+    const groupedItems = items.reduce((acc, item) => {
+      const key = item.itemName || 'ללא שם';
+      if (!acc[key]) {
+        acc[key] = {
+          itemName: item.itemName,
+          locations: new Set(),
+          totalQuantity: 0,
+          items: []
+        };
+      }
+      acc[key].totalQuantity += parseInt(item.quantity) || 1;
+      if (item.location) acc[key].locations.add(item.location);
+      acc[key].items.push(item);
+      return acc;
+    }, {});
+
+    // Prepare data for Excel in a grouped visual layout
+    const dataToExport = [];
+    Object.values(groupedItems).forEach(group => {
+      // Master group row
+      dataToExport.push({
+        'שם הפריט': group.itemName,
+        'מספר אינוונטר': '-',
+        'מספר סריאלי': '-',
+        'מיקום': group.locations.size > 1 ? 'מספר מיקומים' : (Array.from(group.locations)[0] || '-'),
+        'הערות': '-',
+        'כמות': group.totalQuantity,
+        'תאריך הוספה': '-'
+      });
+      
+      // Child detail rows
+      group.items.forEach(item => {
+        dataToExport.push({
+          'שם הפריט': '  ↳ פירוט',
+          'מספר אינוונטר': item.inventoryNumber || '-',
+          'מספר סריאלי': item.serialNumber || '-',
+          'מיקום': item.location || '-',
+          'הערות': item.notes || '-',
+          'כמות': item.quantity,
+          'תאריך הוספה': new Date(item.createdAt).toLocaleDateString('he-IL')
+        });
+      });
+    });
 
     // Create a new workbook and worksheet
     const worksheet = XLSX.utils.json_to_sheet(dataToExport);
