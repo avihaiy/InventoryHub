@@ -9,10 +9,10 @@ const generateId = () => {
   return Date.now().toString(36) + Math.random().toString(36).substring(2);
 };
 
-const InventoryForm = ({ onAddItem, locations = [] }) => {
-  const [itemName, setItemName] = useState('');
-  const [location, setLocation] = useState('');
-  const [minQuantity, setMinQuantity] = useState(0);
+const InventoryForm = ({ onAddItem, locations = [], initialValues = null }) => {
+  const [itemName, setItemName] = useState(initialValues?.itemName || '');
+  const [location, setLocation] = useState(initialValues?.location || '');
+  const [minQuantity, setMinQuantity] = useState(initialValues?.minQuantity || 0);
   const [identifiers, setIdentifiers] = useState([
     { inventoryNumber: '', serialNumber: '', quantity: 1 }
   ]);
@@ -52,11 +52,11 @@ const InventoryForm = ({ onAddItem, locations = [] }) => {
       return;
     }
 
-    // Filter out rows where inventory number is empty
-    const validIdentifiers = identifiers.filter(id => id.inventoryNumber.trim() !== '');
+    // We allow items without inventory numbers now
+    const validIdentifiers = identifiers.filter(id => id.inventoryNumber.trim() !== '' || id.serialNumber.trim() !== '' || id.quantity > 0);
     
     if (validIdentifiers.length === 0) {
-      alert('נא למלא לפחות מספר אינוונטר אחד');
+      alert('נא להזין נתונים תקינים');
       return;
     }
 
@@ -159,8 +159,7 @@ const InventoryForm = ({ onAddItem, locations = [] }) => {
                       type="text" 
                       value={identifier.inventoryNumber} 
                       onChange={(e) => handleIdentifierChange(index, 'inventoryNumber', e.target.value)} 
-                      placeholder="INV-001"
-                      required
+                      placeholder="לא חובה (INV-001)"
                       className="w-full"
                     />
                     <button 
