@@ -4,6 +4,7 @@ import { supabase } from './supabase';
 import InventoryForm from './components/InventoryForm';
 import InventoryTable from './components/InventoryTable';
 import ExportButton from './components/ExportButton';
+import ExcelImport from './components/ExcelImport';
 import Login from './components/Login';
 import UserManagement from './components/UserManagement';
 import LocationManagement from './components/LocationManagement';
@@ -256,7 +257,11 @@ function App() {
       
       if (Array.isArray(newItems)) {
         itemsToInsert = newItems.map(item => ({ ...item, createdAt: new Date().toISOString() }));
-        itemName = newItems[0].itemName;
+        if (newItems.length > 1 && newItems.some(i => i.itemName !== newItems[0].itemName)) {
+          itemName = 'מספר פריטים (ייבוא מרובה)';
+        } else {
+          itemName = newItems[0].itemName;
+        }
         totalAdded = newItems.reduce((sum, i) => sum + (i.quantity || 1), 0);
       } else {
         itemsToInsert = [{ ...newItems, createdAt: new Date().toISOString() }];
@@ -476,6 +481,7 @@ function App() {
                 <Plus size={20} />
                 <span>הוסף פריט</span>
               </button>
+              <ExcelImport onImport={handleAddItem} />
               <ExportButton items={items} />
             </>
           )}

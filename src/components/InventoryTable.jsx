@@ -6,6 +6,7 @@ const InventoryTable = ({ items, onDeleteItem, onUpdateItem, onAddChild, userRol
   const [editFormData, setEditFormData] = useState({});
   const [expandedGroups, setExpandedGroups] = useState({});
   const [searchTerm, setSearchTerm] = useState('');
+  const [filterLocation, setFilterLocation] = useState('');
 
   const handleEditClick = (item, e) => {
     e.stopPropagation();
@@ -51,8 +52,9 @@ const InventoryTable = ({ items, onDeleteItem, onUpdateItem, onAddChild, userRol
     );
   }
 
-  // Filter items based on search term
+  // Filter items based on search term and location
   const filteredItems = items.filter(item => {
+    if (filterLocation && item.location !== filterLocation) return false;
     if (!searchTerm) return true;
     const term = String(searchTerm).toLowerCase();
     return (
@@ -104,16 +106,30 @@ const InventoryTable = ({ items, onDeleteItem, onUpdateItem, onAddChild, userRol
       <div className="flex flex-col md:flex-row md:justify-between items-start md:items-center gap-4 mb-4">
         <h2 className="card-title mb-0">רשימת מלאי ({filteredItems.length} מתוך {items.length} רשומות)</h2>
         
-        <div className="search-container input-with-icon w-full md:w-auto">
-          <input 
-            type="text" 
-            placeholder="חיפוש חופשי..." 
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full md:w-80px"
-            style={{ width: '100%', minWidth: '250px' }}
-          />
-          <Search size={18} className="input-icon" />
+        <div className="flex flex-col md:flex-row gap-2 w-full md:w-auto">
+          <select
+            value={filterLocation}
+            onChange={(e) => setFilterLocation(e.target.value)}
+            className="custom-select w-full md:w-auto"
+            style={{ padding: '0.6rem 1rem', paddingLeft: '2rem', minWidth: '150px' }}
+          >
+            <option value="">כל המיקומים</option>
+            {locations.map(loc => (
+              <option key={loc.id} value={loc.name}>{loc.name}</option>
+            ))}
+          </select>
+          
+          <div className="search-container input-with-icon w-full md:w-auto">
+            <input 
+              type="text" 
+              placeholder="חיפוש חופשי..." 
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full"
+              style={{ width: '100%', minWidth: '200px' }}
+            />
+            <Search size={18} className="input-icon" />
+          </div>
         </div>
       </div>
       
