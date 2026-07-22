@@ -12,10 +12,9 @@ const generateId = () => {
 const InventoryForm = ({ onAddItem, locations = [], initialValues = null, existingItems = [] }) => {
   const [itemName, setItemName] = useState(initialValues?.itemName || '');
   const [location, setLocation] = useState(initialValues?.location || '');
-  const [notes, setNotes] = useState(initialValues?.notes || '');
   const [minQuantity, setMinQuantity] = useState(initialValues?.minQuantity || 0);
   const [identifiers, setIdentifiers] = useState([
-    { inventoryNumber: '', serialNumber: '', quantity: 1 }
+    { inventoryNumber: '', serialNumber: '', quantity: 1, notes: '' }
   ]);
   const [scannerTarget, setScannerTarget] = useState(null);
 
@@ -53,7 +52,7 @@ const InventoryForm = ({ onAddItem, locations = [], initialValues = null, existi
   };
 
   const addIdentifierRow = () => {
-    setIdentifiers([...identifiers, { inventoryNumber: '', serialNumber: '', quantity: 1 }]);
+    setIdentifiers([...identifiers, { inventoryNumber: '', serialNumber: '', quantity: 1, notes: '' }]);
   };
 
   const removeIdentifierRow = (index) => {
@@ -86,7 +85,7 @@ const InventoryForm = ({ onAddItem, locations = [], initialValues = null, existi
       serialNumber: id.serialNumber,
       quantity: id.quantity || 1,
       minQuantity: parseInt(minQuantity) || 0,
-      notes: notes,
+      notes: id.notes || '',
       createdAt: new Date().toISOString()
     }));
     
@@ -95,9 +94,8 @@ const InventoryForm = ({ onAddItem, locations = [], initialValues = null, existi
     // Reset form
     setItemName('');
     setLocation('');
-    setNotes('');
     setMinQuantity(0);
-    setIdentifiers([{ inventoryNumber: '', serialNumber: '', quantity: 1 }]);
+    setIdentifiers([{ inventoryNumber: '', serialNumber: '', quantity: 1, notes: '' }]);
   };
 
   const totalQuantity = identifiers.reduce((sum, id) => sum + (parseInt(id.quantity) || 1), 0);
@@ -158,27 +156,6 @@ const InventoryForm = ({ onAddItem, locations = [], initialValues = null, existi
               min="0"
             />
           </div>
-        </div>
-
-        <div className="input-group mb-4">
-          <label htmlFor="notes">הערות</label>
-          <textarea 
-            id="notes" 
-            value={notes} 
-            onChange={(e) => setNotes(e.target.value)} 
-            placeholder="פירוט נוסף, מצב הפריט, שיוך לעובד, וכו'..."
-            rows="2"
-            style={{ 
-              background: 'var(--bg-input)', 
-              border: '1px solid var(--border-color)',
-              color: 'var(--text-primary)',
-              padding: '0.75rem 1rem',
-              borderRadius: 'var(--radius-md)',
-              fontFamily: 'inherit',
-              width: '100%',
-              resize: 'vertical'
-            }}
-          />
         </div>
 
         <div className="identifiers-section mt-4">
@@ -250,6 +227,17 @@ const InventoryForm = ({ onAddItem, locations = [], initialValues = null, existi
                     value={identifier.quantity} 
                     onChange={(e) => handleIdentifierChange(index, 'quantity', e.target.value)} 
                     required
+                  />
+                </div>
+
+                <div className="input-group w-full" style={{ marginBottom: 0, flex: 1 }}>
+                  <label>הערות לפריט זה</label>
+                  <input 
+                    type="text" 
+                    value={identifier.notes} 
+                    onChange={(e) => handleIdentifierChange(index, 'notes', e.target.value)} 
+                    placeholder="הערה (אופציונלי)"
+                    className="w-full"
                   />
                 </div>
 
