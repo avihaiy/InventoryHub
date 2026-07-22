@@ -43,11 +43,62 @@ function App() {
 
   const [showUserManagement, setShowUserManagement] = useState(false);
   const [showLocationManagement, setShowLocationManagement] = useState(false);
-  const [showActivityLog, setShowActivityLog] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [addModalPrefill, setAddModalPrefill] = useState(null);
   const [settings, setSettings] = useState(null);
+  const [isSyncing, setIsSyncing] = useState(false);
+
+  // --- Offline Queue Logic ---
+  const addToOfflineQueue = (type, payload) => {
+    const queue = JSON.parse(localStorage.getItem('offlineQueue') || '[]');
+    queue.push({ id: generateId(), type, payload, timestamp: Date.now() });
+    localStorage.setItem('offlineQueue', JSON.stringify(queue));
+  };
+
+  const processOfflineQueue = async () => {
+    if (!navigator.onLine) return;
+    const queue = JSON.parse(localStorage.getItem('offlineQueue') || '[]');
+    if (queue.length === 0) return;
+
+    setIsSyncing(true);
+    let successCount = 0;
+    const failedQueue = [];
+
+    for (const task of queue) {
+      try {
+        if (task.type === 'ADD_ITEM') {
+          const { error } = await supabase.from('items').insert(task.payload);
+          if (error) throw error;
+        } else if (task.type === 'UPDATE_ITEM') {
+          const { error } = await supabase.from('items').update(task.payload).eq('id', task.payload.id);
+          if (error) throw error;
+        } else if (task.type === 'DELETE_ITEM') {
+          const { error } = await supabase.from('items').delete().eq('id', task.payload);
+          if (error) throw error;
+        }
+        successCount++;
+      } catch (e) {
+        console.error("Failed to sync offline task:", e);
+        failedQueue.push(task);
+      }
+    }
+
+    localStorage.setItem('offlineQueue', JSON.stringify(failedQueue));
+    setIsSyncing(false);
+
+    if (successCount > 0) {
+      const { data } = await supabase.from('items').select('*').order('createdAt', { ascending: false });
+      if (data) setItems(data);
+    }
+  };
+
+  useEffect(() => {
+    window.addEventListener('online', processOfflineQueue);
+    if (navigator.onLine) processOfflineQueue();
+    return () => window.removeEventListener('online', processOfflineQueue);
+  }, []);
+  // ---------------------------
 
   // Subscribe to Supabase collections (Real-time syncing)
   useEffect(() => {
@@ -199,40 +250,58 @@ function App() {
     try {
       let itemName = '';
       let totalAdded = 0;
+      let itemsToInsert = [];
       
       if (Array.isArray(newItems)) {
-        const itemsToInsert = newItems.map(item => ({ ...item, createdAt: new Date().toISOString() }));
-        const { error } = await supabase.from('items').insert(itemsToInsert);
-        if (error) throw error;
+        itemsToInsert = newItems.map(item => ({ ...item, createdAt: new Date().toISOString() }));
         itemName = newItems[0].itemName;
         totalAdded = newItems.reduce((sum, i) => sum + (i.quantity || 1), 0);
-        logActivity('ADD', itemName, `נוספו ${newItems.length} רשומות חדשות`);
       } else {
-        const itemToInsert = { ...newItems, createdAt: new Date().toISOString() };
-        const { error } = await supabase.from('items').insert([itemToInsert]);
-        if (error) throw error;
+        itemsToInsert = [{ ...newItems, createdAt: new Date().toISOString() }];
         itemName = newItems.itemName;
         totalAdded = newItems.quantity || 1;
-        logActivity('ADD', itemName, `נוסף פריט. אינוונטר: ${newItems.inventoryNumber}`);
       }
+
+      if (!navigator.onLine) {
+        addToOfflineQueue('ADD_ITEM', itemsToInsert);
+        setItems(prev => [...itemsToInsert, ...prev]);
+        logActivity('ADD (OFFLINE)', itemName, `נוסף במצב אופליין. יסונכרן בהמשך.`);
+        alert("אין חיבור לאינטרנט! הפריט נשמר מקומית ויסונכרן אוטומטית כשתחזור הקליטה.");
+        return;
+      }
+
+      const { error } = await supabase.from('items').insert(itemsToInsert);
+      if (error) throw error;
       
+      logActivity('ADD', itemName, `נוספו רשומות חדשות למלאי`);
       sendTelegramAlert(`✅ *פריט חדש למלאי:*\n*${itemName}*\n📦 כמות שנוספה: ${totalAdded}\n👤 בוצע ע"י: ${currentUser?.email || 'מנהל'}`);
       
     } catch(e) {
-      alert("שגיאה בשמירה לענן: " + e.message);
+      if (e.message?.includes('Failed to fetch')) {
+        alert("נראה שהחיבור ניתק. נא לנסות שוב.");
+      } else {
+        alert("שגיאה בשמירה לענן: " + e.message);
+      }
     }
   };
 
   const handleUpdateItem = async (updatedItem) => {
     try {
       const oldItem = items.find(i => i.id === updatedItem.id);
-      
-      const { error } = await supabase.from('items').update(updatedItem).eq('id', updatedItem.id);
-      if (error) throw error;
-      
       const oldQuantity = oldItem ? oldItem.quantity : 0;
       const newQuantity = updatedItem.quantity;
       const minQuantity = updatedItem.minQuantity || 0;
+
+      if (!navigator.onLine) {
+        addToOfflineQueue('UPDATE_ITEM', updatedItem);
+        setItems(prev => prev.map(i => i.id === updatedItem.id ? updatedItem : i));
+        logActivity('UPDATE (OFFLINE)', updatedItem.itemName, `עודכן באופליין.`);
+        alert("אין אינטרנט! הפריט עודכן מקומית ויסונכרן בהמשך.");
+        return;
+      }
+      
+      const { error } = await supabase.from('items').update(updatedItem).eq('id', updatedItem.id);
+      if (error) throw error;
       
       if (oldQuantity !== newQuantity) {
         logActivity('UPDATE', updatedItem.itemName, `עדכון כמות מ-${oldQuantity} ל-${newQuantity}`);
@@ -248,7 +317,11 @@ function App() {
         logActivity('UPDATE', updatedItem.itemName, `עודכן פריט. אינוונטר: ${updatedItem.inventoryNumber}`);
       }
     } catch(e) {
-      alert("שגיאה בעדכון: " + e.message);
+      if (e.message?.includes('Failed to fetch')) {
+        alert("נראה שהחיבור ניתק. נא לנסות שוב.");
+      } else {
+        alert("שגיאה בעדכון הפריט: " + e.message);
+      }
     }
   };
 
@@ -257,18 +330,32 @@ function App() {
       alert('אין לך הרשאות למחוק פריטים.');
       return;
     }
-    
-    if (window.confirm('האם אתה בטוח שברצונך למחוק פריט זה?')) {
-      const itemToDelete = items.find(item => item.id === id);
+
+    if (window.confirm("האם אתה בטוח שברצונך למחוק פריט זה?")) {
       try {
+        const itemToDelete = items.find(i => i.id === id);
+
+        if (!navigator.onLine) {
+          addToOfflineQueue('DELETE_ITEM', id);
+          setItems(prev => prev.filter(i => i.id !== id));
+          if (itemToDelete) logActivity('DELETE (OFFLINE)', itemToDelete.itemName, `נמחק באופליין.`);
+          alert("אין אינטרנט! הפריט נמחק מקומית ויסונכרן בהמשך.");
+          return;
+        }
+
         const { error } = await supabase.from('items').delete().eq('id', id);
         if (error) throw error;
+        
         if (itemToDelete) {
-          logActivity('DELETE', itemToDelete.itemName, `נמחק פריט. אינוונטר: ${itemToDelete.inventoryNumber}`);
-          sendTelegramAlert(`🗑️ *פריט נמחק מהמלאי:*\n*${itemToDelete.itemName}*\n📍 מיקום: ${itemToDelete.location || '-'}\n👤 בוצע ע"י: ${currentUser?.email || 'מנהל'}`);
+           logActivity('DELETE', itemToDelete.itemName, `נמחק פריט. אינוונטר: ${itemToDelete.inventoryNumber}`);
+           sendTelegramAlert(`🗑️ *פריט נמחק מהמלאי:*\n*${itemToDelete.itemName}*\n👤 בוצע ע"י: ${currentUser?.email || 'מנהל'}`);
         }
-      } catch(e) {
-        alert("שגיאה במחיקה: " + e.message);
+      } catch(e) { 
+        if (e.message?.includes('Failed to fetch')) {
+          alert("נראה שהחיבור ניתק. נא לנסות שוב.");
+        } else {
+          alert("שגיאה במחיקת הפריט: " + e.message); 
+        }
       }
     }
   };
