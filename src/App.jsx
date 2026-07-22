@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { PackageSearch, LogOut, Users, MapPin, Activity, Plus, X } from 'lucide-react';
+import { PackageSearch, LogOut, Users, MapPin, Activity, Plus, X, Settings as SettingsIcon } from 'lucide-react';
 import { supabase } from './supabase';
 import InventoryForm from './components/InventoryForm';
 import InventoryTable from './components/InventoryTable';
@@ -9,6 +9,7 @@ import UserManagement from './components/UserManagement';
 import LocationManagement from './components/LocationManagement';
 import Dashboard from './components/Dashboard';
 import ActivityLog from './components/ActivityLog';
+import Settings from './components/Settings';
 import './index.css';
 
 const DEFAULT_ADMIN = {
@@ -43,7 +44,9 @@ function App() {
   const [showUserManagement, setShowUserManagement] = useState(false);
   const [showLocationManagement, setShowLocationManagement] = useState(false);
   const [showActivityLog, setShowActivityLog] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [settings, setSettings] = useState(null);
 
   // Subscribe to Supabase collections (Real-time syncing)
   useEffect(() => {
@@ -62,6 +65,13 @@ function App() {
       if (usersData) {
         if (!usersData.some(u => u.email === DEFAULT_ADMIN.email)) setUsers([DEFAULT_ADMIN, ...usersData]);
         else setUsers(usersData);
+      }
+      
+      try {
+        const { data: settingsData } = await supabase.from('settings').select('*').eq('id', 'default').single();
+        if (settingsData) setSettings(settingsData);
+      } catch (e) {
+        // Table might not exist yet, ignore
       }
     };
     
@@ -174,6 +184,7 @@ function App() {
     setShowUserManagement(false);
     setShowLocationManagement(false);
     setShowActivityLog(false);
+    setShowSettings(false);
   };
 
   const handleAddItem = async (newItems) => {
@@ -196,9 +207,32 @@ function App() {
 
   const handleUpdateItem = async (updatedItem) => {
     try {
+      const oldItem = items.find(i => i.id === updatedItem.id);
+      
       const { error } = await supabase.from('items').update(updatedItem).eq('id', updatedItem.id);
       if (error) throw error;
-      logActivity('UPDATE', updatedItem.itemName, `עודכן פריט. אינוונטר: ${updatedItem.inventoryNumber}`);
+      
+      const oldQuantity = oldItem ? oldItem.quantity : 0;
+      const newQuantity = updatedItem.quantity;
+      const minQuantity = updatedItem.minQuantity || 0;
+      
+      if (oldQuantity !== newQuantity) {
+        logActivity('UPDATE', updatedItem.itemName, `עדכון כמות מ-${oldQuantity} ל-${newQuantity}`);
+        
+        // Calculate total quantity across all identical items
+        const totalNow = items.filter(i => i.itemName === updatedItem.itemName).reduce((sum, i) => sum + (i.id === updatedItem.id ? newQuantity : i.quantity), 0);
+        const totalBefore = items.filter(i => i.itemName === updatedItem.itemName).reduce((sum, i) => sum + i.quantity, 0);
+        
+        if (minQuantity > 0 && totalNow < minQuantity && totalBefore >= minQuantity) {
+          if (settings?.whatsapp_phone && settings?.whatsapp_apikey) {
+            const text = encodeURIComponent(`🚨 *התראת מלאי:* הפריט *${updatedItem.itemName}* ירד מתחת לכמות המינימום (${minQuantity}). כמות נוכחית: ${totalNow}. אנא הזמן מלאי חדש.`);
+            const url = `https://api.callmebot.com/whatsapp.php?phone=${settings.whatsapp_phone}&text=${text}&apikey=${settings.whatsapp_apikey}`;
+            fetch(url, { mode: 'no-cors' }).catch(console.error);
+          }
+        }
+      } else {
+        logActivity('UPDATE', updatedItem.itemName, `עודכן פריט. אינוונטר: ${updatedItem.inventoryNumber}`);
+      }
     } catch(e) {
       alert("שגיאה בעדכון: " + e.message);
     }
@@ -262,6 +296,16 @@ function App() {
     } catch(e) { alert("שגיאה במחיקת מיקום: " + e.message); }
   };
 
+  const handleSaveSettings = async (newSettings) => {
+    try {
+      const { error } = await supabase.from('settings').upsert({ id: 'default', ...newSettings });
+      if (error) throw error;
+      setSettings(newSettings);
+    } catch(e) {
+      throw e;
+    }
+  };
+
   const clearLogs = async () => {
     if (window.confirm('למחוק את כל היסטוריית הפעולות?')) {
        // Delete all rows trick in Supabase
@@ -285,7 +329,7 @@ function App() {
           {currentUser.role === 'admin' && (
             <>
               <button 
-                onClick={() => { setShowLocationManagement(true); setShowUserManagement(false); setShowActivityLog(false); }} 
+                onClick={() => { setShowLocationManagement(true); setShowUserManagement(false); setShowActivityLog(false); setShowSettings(false); }} 
                 className={`btn ${showLocationManagement ? 'btn-primary' : 'btn-secondary'} btn-icon`}
                 title="ניהול מיקומים"
               >
@@ -293,7 +337,7 @@ function App() {
                 <span className="hide-on-mobile">מיקומים</span>
               </button>
               <button 
-                onClick={() => { setShowUserManagement(true); setShowLocationManagement(false); setShowActivityLog(false); }} 
+                onClick={() => { setShowUserManagement(true); setShowLocationManagement(false); setShowActivityLog(false); setShowSettings(false); }} 
                 className={`btn ${showUserManagement ? 'btn-primary' : 'btn-secondary'} btn-icon`}
                 title="ניהול משתמשים"
               >
@@ -301,16 +345,24 @@ function App() {
                 <span className="hide-on-mobile">משתמשים</span>
               </button>
               <button 
-                onClick={() => { setShowActivityLog(true); setShowLocationManagement(false); setShowUserManagement(false); }} 
+                onClick={() => { setShowActivityLog(true); setShowLocationManagement(false); setShowUserManagement(false); setShowSettings(false); }} 
                 className={`btn ${showActivityLog ? 'btn-primary' : 'btn-secondary'} btn-icon`}
                 title="יומן פעולות"
               >
                 <Activity size={20} />
                 <span className="hide-on-mobile">פעולות</span>
               </button>
+              <button 
+                onClick={() => { setShowSettings(true); setShowLocationManagement(false); setShowUserManagement(false); setShowActivityLog(false); }} 
+                className={`btn ${showSettings ? 'btn-primary' : 'btn-secondary'} btn-icon`}
+                title="הגדרות מערכת"
+              >
+                <SettingsIcon size={20} />
+                <span className="hide-on-mobile">הגדרות</span>
+              </button>
             </>
           )}
-          {!showUserManagement && !showLocationManagement && !showActivityLog && (
+          {!showUserManagement && !showLocationManagement && !showActivityLog && !showSettings && (
             <>
               <button 
                 onClick={() => setIsAddModalOpen(true)}
@@ -349,6 +401,13 @@ function App() {
           <ActivityLog 
             logs={activityLogs} 
             onClear={clearLogs} 
+            onBack={() => setShowActivityLog(false)}
+          />
+        ) : showSettings && currentUser.role === 'admin' ? (
+          <Settings 
+            settings={settings}
+            onSave={handleSaveSettings}
+            onBack={() => setShowSettings(false)}
           />
         ) : (
           <>

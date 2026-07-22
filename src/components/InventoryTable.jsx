@@ -63,6 +63,21 @@ const InventoryTable = ({ items, onDeleteItem, onUpdateItem, userRole, locations
     );
   });
 
+  // Calculate overall totals per item name for alerts
+  const itemOverallTotals = {};
+  if (items) {
+    items.forEach(item => {
+      if (!item || !item.itemName) return;
+      if (!itemOverallTotals[item.itemName]) {
+        itemOverallTotals[item.itemName] = { total: 0, minQuantity: 0 };
+      }
+      itemOverallTotals[item.itemName].total += parseInt(item.quantity) || 1;
+      if (item.minQuantity > 0) {
+        itemOverallTotals[item.itemName].minQuantity = item.minQuantity;
+      }
+    });
+  }
+
   // Group items by itemName and location
   const groupedItems = filteredItems.reduce((acc, item) => {
     if (!item) return acc;
@@ -132,7 +147,18 @@ const InventoryTable = ({ items, onDeleteItem, onUpdateItem, userRole, locations
                   <td style={{ color: 'var(--text-secondary)' }}>-</td>
                   <td style={{ fontWeight: 500 }}>{group.location || '-'}</td>
                   <td>
-                    <span className="quantity-badge">{group.totalQuantity}</span>
+                    {(() => {
+                      const overall = itemOverallTotals[group.itemName] || { total: 0, minQuantity: 0 };
+                      const isLow = overall.minQuantity > 0 && overall.total < overall.minQuantity;
+                      return (
+                        <div className="flex flex-col items-start">
+                          <span className={`quantity-badge ${isLow ? 'bg-red-500 bg-opacity-20 text-red-400 border border-red-500' : ''}`} title={isLow ? 'מלאי כולל נמוך מהמינימום' : ''}>
+                            {group.totalQuantity}
+                          </span>
+                          {isLow && <span className="text-[10px] text-red-400 mt-1 font-semibold">מלאי נמוך!</span>}
+                        </div>
+                      );
+                    })()}
                   </td>
                   {userRole === 'admin' && <td></td>}
                 </tr>
@@ -185,15 +211,31 @@ const InventoryTable = ({ items, onDeleteItem, onUpdateItem, userRole, locations
                           </select>
                         </td>
                         <td>
-                          <input 
-                            type="number" 
-                            name="quantity" 
-                            value={editFormData.quantity} 
-                            onChange={handleChange} 
-                            className="edit-input" 
-                            min="1"
-                            style={{ width: '60px' }}
-                          />
+                          <div className="flex flex-col gap-1">
+                            <input 
+                              type="number" 
+                              name="quantity" 
+                              value={editFormData.quantity} 
+                              onChange={handleChange} 
+                              className="edit-input" 
+                              min="1"
+                              style={{ width: '60px' }}
+                              title="כמות"
+                            />
+                            <div className="flex items-center gap-1">
+                              <span className="text-[10px] text-gray-400">התראה:</span>
+                              <input 
+                                type="number" 
+                                name="minQuantity" 
+                                value={editFormData.minQuantity || 0} 
+                                onChange={handleChange} 
+                                className="edit-input" 
+                                min="0"
+                                style={{ width: '40px', padding: '2px 4px', fontSize: '11px', height: '24px' }}
+                                title="כמות מינימום להתראה"
+                              />
+                            </div>
+                          </div>
                         </td>
                         <td className="flex gap-2">
                           <button 
@@ -222,7 +264,12 @@ const InventoryTable = ({ items, onDeleteItem, onUpdateItem, userRole, locations
                           {item.serialNumber || '-'}
                         </td>
                         <td style={{ color: 'var(--text-secondary)' }}>{item.location || '-'}</td>
-                        <td>{item.quantity}</td>
+                        <td>
+                          <div className="flex flex-col">
+                            <span className="font-semibold text-accent">{item.quantity}</span>
+                            {item.minQuantity > 0 && <span className="text-[10px] text-gray-500">התראה מ-{item.minQuantity}</span>}
+                          </div>
+                        </td>
                         {userRole === 'admin' && (
                           <td className="flex gap-2">
                             <button 

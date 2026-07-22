@@ -12,6 +12,7 @@ const generateId = () => {
 const InventoryForm = ({ onAddItem, locations = [] }) => {
   const [itemName, setItemName] = useState('');
   const [location, setLocation] = useState('');
+  const [minQuantity, setMinQuantity] = useState(0);
   const [identifiers, setIdentifiers] = useState([
     { inventoryNumber: '', serialNumber: '', quantity: 1 }
   ]);
@@ -66,6 +67,7 @@ const InventoryForm = ({ onAddItem, locations = [] }) => {
       inventoryNumber: id.inventoryNumber,
       serialNumber: id.serialNumber,
       quantity: id.quantity || 1,
+      minQuantity: parseInt(minQuantity) || 0,
       createdAt: new Date().toISOString()
     }));
     
@@ -74,6 +76,7 @@ const InventoryForm = ({ onAddItem, locations = [] }) => {
     // Reset form
     setItemName('');
     setLocation('');
+    setMinQuantity(0);
     setIdentifiers([{ inventoryNumber: '', serialNumber: '', quantity: 1 }]);
   };
 
@@ -115,6 +118,18 @@ const InventoryForm = ({ onAddItem, locations = [] }) => {
                 <option key={loc.id} value={loc.name}>{loc.name}</option>
               ))}
             </select>
+          </div>
+
+          <div className="input-group">
+            <label htmlFor="minQuantity">כמות התראה מינימלית (וואטסאפ)</label>
+            <input 
+              type="number" 
+              id="minQuantity" 
+              value={minQuantity} 
+              onChange={(e) => setMinQuantity(e.target.value)} 
+              placeholder="0 (ללא התראה)"
+              min="0"
+            />
           </div>
         </div>
 
