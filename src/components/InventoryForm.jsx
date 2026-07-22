@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { PackagePlus, Plus, Minus, Hash, Scan } from 'lucide-react';
 import BarcodeScanner from './BarcodeScanner';
 
@@ -9,7 +9,7 @@ const generateId = () => {
   return Date.now().toString(36) + Math.random().toString(36).substring(2);
 };
 
-const InventoryForm = ({ onAddItem, locations = [], initialValues = null }) => {
+const InventoryForm = ({ onAddItem, locations = [], initialValues = null, existingItems = [] }) => {
   const [itemName, setItemName] = useState(initialValues?.itemName || '');
   const [location, setLocation] = useState(initialValues?.location || '');
   const [minQuantity, setMinQuantity] = useState(initialValues?.minQuantity || 0);
@@ -17,6 +17,23 @@ const InventoryForm = ({ onAddItem, locations = [], initialValues = null }) => {
     { inventoryNumber: '', serialNumber: '', quantity: 1 }
   ]);
   const [scannerTarget, setScannerTarget] = useState(null);
+
+  // Auto-fill location and minQuantity when selecting an existing item name
+  useEffect(() => {
+    if (itemName && existingItems && existingItems.length > 0) {
+      const existing = existingItems.find(i => i.itemName === itemName);
+      if (existing) {
+        if (!location && existing.location) setLocation(existing.location);
+        if (!minQuantity && existing.minQuantity > 0) setMinQuantity(existing.minQuantity);
+      }
+    }
+  }, [itemName]);
+
+  // Extract unique item names for autocomplete
+  const uniqueItemNames = useMemo(() => {
+    if (!existingItems) return [];
+    return [...new Set(existingItems.map(i => i.itemName).filter(Boolean))];
+  }, [existingItems]);
 
   const handleScan = (decodedText) => {
     if (scannerTarget) {
@@ -98,9 +115,16 @@ const InventoryForm = ({ onAddItem, locations = [], initialValues = null }) => {
               id="itemName" 
               value={itemName} 
               onChange={(e) => setItemName(e.target.value)} 
-              placeholder="לדוגמה: מחשב נייד Dell"
-              required 
+              placeholder="לדוגמה: מחשב נייד DELL"
+              required
+              list="existing-item-names"
+              autoComplete="off"
             />
+            <datalist id="existing-item-names">
+              {uniqueItemNames.map(name => (
+                <option key={name} value={name} />
+              ))}
+            </datalist>
           </div>
           
           <div className="input-group">

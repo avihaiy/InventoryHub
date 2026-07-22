@@ -46,6 +46,7 @@ function App() {
   const [showActivityLog, setShowActivityLog] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [addModalPrefill, setAddModalPrefill] = useState(null);
   const [settings, setSettings] = useState(null);
 
   // Subscribe to Supabase collections (Real-time syncing)
@@ -379,7 +380,7 @@ function App() {
           {!showUserManagement && !showLocationManagement && !showActivityLog && !showSettings && (
             <>
               <button 
-                onClick={() => setIsAddModalOpen(true)}
+                onClick={() => { setAddModalPrefill(null); setIsAddModalOpen(true); }}
                 className="btn btn-primary hide-on-mobile btn-icon"
                 title="הוסף פריט"
               >
@@ -430,6 +431,18 @@ function App() {
               items={items} 
               onDeleteItem={handleDeleteItem} 
               onUpdateItem={handleUpdateItem}
+              onAddChild={(group) => {
+                const overallTotals = {};
+                items.forEach(i => {
+                  if (i.itemName === group.itemName && i.minQuantity > 0) overallTotals.minQuantity = i.minQuantity;
+                });
+                setAddModalPrefill({
+                  itemName: group.itemName,
+                  location: group.location,
+                  minQuantity: overallTotals.minQuantity || 0
+                });
+                setIsAddModalOpen(true);
+              }}
               userRole={currentUser.role}
               locations={locations}
             />
@@ -437,7 +450,7 @@ function App() {
             {/* Mobile Floating Action Button */}
             <button 
               className="fab-btn md:hidden"
-              onClick={() => setIsAddModalOpen(true)}
+              onClick={() => { setAddModalPrefill(null); setIsAddModalOpen(true); }}
               title="הוסף פריט"
             >
               <Plus size={28} />
@@ -445,17 +458,20 @@ function App() {
 
             {/* Modal for Add Item */}
             {isAddModalOpen && (
-              <div className="modal-overlay" onClick={() => setIsAddModalOpen(false)}>
+              <div className="modal-overlay" onClick={() => { setIsAddModalOpen(false); setAddModalPrefill(null); }}>
                 <div className="modal-content animate-slide-in" onClick={e => e.stopPropagation()}>
-                  <button className="modal-close-btn" onClick={() => setIsAddModalOpen(false)}>
+                  <button className="modal-close-btn" onClick={() => { setIsAddModalOpen(false); setAddModalPrefill(null); }}>
                     <X size={20} />
                   </button>
                   <InventoryForm 
-                    onAddItem={(items) => {
-                      handleAddItem(items);
+                    initialValues={addModalPrefill}
+                    onAddItem={(newItems) => {
+                      handleAddItem(newItems);
                       setIsAddModalOpen(false); // Close automatically after success
+                      setAddModalPrefill(null);
                     }} 
                     locations={locations} 
+                    existingItems={items}
                   />
                 </div>
               </div>
