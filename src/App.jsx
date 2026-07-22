@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { PackageSearch, LogOut, Users, MapPin, Activity, Plus } from 'lucide-react';
+import { PackageSearch, LogOut, Users, MapPin, Activity, Plus, X } from 'lucide-react';
 import { supabase } from './supabase';
 import InventoryForm from './components/InventoryForm';
 import InventoryTable from './components/InventoryTable';
@@ -43,6 +43,7 @@ function App() {
   const [showUserManagement, setShowUserManagement] = useState(false);
   const [showLocationManagement, setShowLocationManagement] = useState(false);
   const [showActivityLog, setShowActivityLog] = useState(false);
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
   // Subscribe to Supabase collections (Real-time syncing)
   useEffect(() => {
@@ -308,7 +309,19 @@ function App() {
               </button>
             </>
           )}
-          {!showUserManagement && !showLocationManagement && !showActivityLog && <ExportButton items={items} />}
+          {!showUserManagement && !showLocationManagement && !showActivityLog && (
+            <>
+              <button 
+                onClick={() => setIsAddModalOpen(true)}
+                className="btn btn-primary hide-on-mobile btn-icon"
+                title="הוסף פריט"
+              >
+                <Plus size={20} />
+                <span>הוסף פריט</span>
+              </button>
+              <ExportButton items={items} />
+            </>
+          )}
           <button onClick={handleLogout} className="btn btn-danger btn-icon">
             <LogOut size={20} />
             <span className="hide-on-mobile">התנתק</span>
@@ -339,9 +352,6 @@ function App() {
         ) : (
           <>
             <Dashboard items={items} locations={locations} />
-            <div id="add-item-form-section">
-              <InventoryForm onAddItem={handleAddItem} locations={locations} />
-            </div>
             <InventoryTable 
               items={items} 
               onDeleteItem={handleDeleteItem} 
@@ -353,13 +363,29 @@ function App() {
             {/* Mobile Floating Action Button */}
             <button 
               className="fab-btn md:hidden"
-              onClick={() => {
-                document.getElementById('add-item-form-section')?.scrollIntoView({ behavior: 'smooth' });
-              }}
+              onClick={() => setIsAddModalOpen(true)}
               title="הוסף פריט"
             >
               <Plus size={28} />
             </button>
+
+            {/* Modal for Add Item */}
+            {isAddModalOpen && (
+              <div className="modal-overlay" onClick={() => setIsAddModalOpen(false)}>
+                <div className="modal-content animate-slide-in" onClick={e => e.stopPropagation()}>
+                  <button className="modal-close-btn" onClick={() => setIsAddModalOpen(false)}>
+                    <X size={20} />
+                  </button>
+                  <InventoryForm 
+                    onAddItem={(items) => {
+                      handleAddItem(items);
+                      setIsAddModalOpen(false); // Close automatically after success
+                    }} 
+                    locations={locations} 
+                  />
+                </div>
+              </div>
+            )}
           </>
         )}
       </main>
