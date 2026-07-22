@@ -78,20 +78,21 @@ const InventoryTable = ({ items, onDeleteItem, onUpdateItem, onAddChild, userRol
     });
   }
 
-  // Group items by itemName and location
+  // Group items by itemName
   const groupedItems = filteredItems.reduce((acc, item) => {
     if (!item) return acc;
-    const key = `${item.itemName || 'ללא שם'}::${item.location || ''}`;
+    const key = item.itemName || 'ללא שם';
     if (!acc[key]) {
       acc[key] = {
         id: key,
         itemName: item.itemName,
-        location: item.location,
+        locations: new Set(),
         totalQuantity: 0,
         items: []
       };
     }
     acc[key].totalQuantity += parseInt(item.quantity) || 1;
+    if (item.location) acc[key].locations.add(item.location);
     acc[key].items.push(item);
     return acc;
   }, {});
@@ -146,7 +147,9 @@ const InventoryTable = ({ items, onDeleteItem, onUpdateItem, onAddChild, userRol
                   </td>
                   <td style={{ color: 'var(--text-secondary)' }}>-</td>
                   <td style={{ color: 'var(--text-secondary)' }}>-</td>
-                  <td style={{ fontWeight: 500 }}>{group.location || '-'}</td>
+                  <td style={{ fontWeight: 500 }}>
+                    {group.locations.size > 1 ? 'מספר מיקומים' : (Array.from(group.locations)[0] || '-')}
+                  </td>
                   <td style={{ color: 'var(--text-secondary)' }}>-</td>
                   <td>
                     {(() => {
