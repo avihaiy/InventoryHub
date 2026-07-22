@@ -43,6 +43,7 @@ function App() {
 
   const [showUserManagement, setShowUserManagement] = useState(false);
   const [showLocationManagement, setShowLocationManagement] = useState(false);
+  const [showActivityLog, setShowActivityLog] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [addModalPrefill, setAddModalPrefill] = useState(null);
