@@ -173,6 +173,13 @@ function App() {
     } catch(e) { console.error(e); }
   };
 
+  const sendTelegramAlert = (text) => {
+    if (settings?.telegram_bot_token && settings?.telegram_chat_id) {
+      const url = `https://api.telegram.org/bot${settings.telegram_bot_token}/sendMessage?chat_id=${settings.telegram_chat_id}&text=${encodeURIComponent(text)}&parse_mode=Markdown`;
+      fetch(url).catch(console.error);
+    }
+  };
+
   const handleLogin = (user) => {
     setCurrentUser(user);
     localStorage.setItem('currentUser', JSON.stringify(user));
@@ -189,17 +196,27 @@ function App() {
 
   const handleAddItem = async (newItems) => {
     try {
+      let itemName = '';
+      let totalAdded = 0;
+      
       if (Array.isArray(newItems)) {
         const itemsToInsert = newItems.map(item => ({ ...item, createdAt: new Date().toISOString() }));
         const { error } = await supabase.from('items').insert(itemsToInsert);
         if (error) throw error;
-        logActivity('ADD', newItems[0].itemName, `נוספו ${newItems.length} רשומות חדשות`);
+        itemName = newItems[0].itemName;
+        totalAdded = newItems.reduce((sum, i) => sum + (i.quantity || 1), 0);
+        logActivity('ADD', itemName, `נוספו ${newItems.length} רשומות חדשות`);
       } else {
         const itemToInsert = { ...newItems, createdAt: new Date().toISOString() };
         const { error } = await supabase.from('items').insert([itemToInsert]);
         if (error) throw error;
-        logActivity('ADD', newItems.itemName, `נוסף פריט. אינוונטר: ${newItems.inventoryNumber}`);
+        itemName = newItems.itemName;
+        totalAdded = newItems.quantity || 1;
+        logActivity('ADD', itemName, `נוסף פריט. אינוונטר: ${newItems.inventoryNumber}`);
       }
+      
+      sendTelegramAlert(`✅ *פריט חדש למלאי:*\n*${itemName}*\n📦 כמות שנוספה: ${totalAdded}\n👤 בוצע ע"י: ${currentUser?.email || 'מנהל'}`);
+      
     } catch(e) {
       alert("שגיאה בשמירה לענן: " + e.message);
     }
@@ -224,11 +241,7 @@ function App() {
         const totalBefore = items.filter(i => i.itemName === updatedItem.itemName).reduce((sum, i) => sum + i.quantity, 0);
         
         if (minQuantity > 0 && totalNow < minQuantity && totalBefore >= minQuantity) {
-          if (settings?.telegram_bot_token && settings?.telegram_chat_id) {
-            const text = encodeURIComponent(`🚨 *התראת מלאי:* הפריט *${updatedItem.itemName}* ירד מתחת לכמות המינימום (${minQuantity}). \n\n📦 *כמות נוכחית:* ${totalNow}\n\nאנא הזמן מלאי חדש.`);
-            const url = `https://api.telegram.org/bot${settings.telegram_bot_token}/sendMessage?chat_id=${settings.telegram_chat_id}&text=${text}&parse_mode=Markdown`;
-            fetch(url).catch(console.error);
-          }
+          sendTelegramAlert(`🚨 *התראת מלאי:* הפריט *${updatedItem.itemName}* ירד מתחת לכמות המינימום (${minQuantity}). \n\n📦 *כמות נוכחית:* ${totalNow}\n\nאנא הזמן מלאי חדש.`);
         }
       } else {
         logActivity('UPDATE', updatedItem.itemName, `עודכן פריט. אינוונטר: ${updatedItem.inventoryNumber}`);
@@ -251,6 +264,7 @@ function App() {
         if (error) throw error;
         if (itemToDelete) {
           logActivity('DELETE', itemToDelete.itemName, `נמחק פריט. אינוונטר: ${itemToDelete.inventoryNumber}`);
+          sendTelegramAlert(`🗑️ *פריט נמחק מהמלאי:*\n*${itemToDelete.itemName}*\n📍 מיקום: ${itemToDelete.location || '-'}\n👤 בוצע ע"י: ${currentUser?.email || 'מנהל'}`);
         }
       } catch(e) {
         alert("שגיאה במחיקה: " + e.message);
