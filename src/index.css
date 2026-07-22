@@ -276,6 +276,7 @@ table {
 th, td {
   padding: 1rem;
   border-bottom: 1px solid var(--border-color);
+  white-space: nowrap;
 }
 
 th {
