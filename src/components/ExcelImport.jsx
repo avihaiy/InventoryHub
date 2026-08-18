@@ -49,9 +49,13 @@ const ExcelImport = ({ onImport, disabled }) => {
             lastLocation = location === 'מספר מיקומים' ? '' : location;
           }
 
-          if (!itemName || !location) {
+          if (!itemName) {
             skippedRows++;
             continue;
+          }
+
+          if (!location || location === '-') {
+            location = lastLocation || 'ללא מיקום';
           }
 
           let inventoryNumber = String(row['אינוונטר'] || row['מספר אינוונטר'] || row['Inventory Number'] || '').trim();
