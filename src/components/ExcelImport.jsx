@@ -30,31 +30,59 @@ const ExcelImport = ({ onImport, disabled }) => {
         // Map columns
         const importedItems = [];
         let skippedRows = 0;
+        let lastItemName = '';
+        let lastLocation = '';
 
-        for (const row of jsonData) {
+        for (let i = 0; i < jsonData.length; i++) {
+          const row = jsonData[i];
           // Identify columns - being flexible with names
-          const itemName = row['שם הפריט'] || row['שם'] || row['Item Name'] || row['ItemName'] || '';
-          const location = row['מיקום'] || row['Location'] || '';
+          let itemName = String(row['שם הפריט'] || row['שם'] || row['Item Name'] || row['ItemName'] || '').trim();
+          let location = String(row['מיקום'] || row['Location'] || '').trim();
           
+          const isChildRow = itemName.includes('↳ פירוט');
+          
+          if (isChildRow) {
+            itemName = lastItemName;
+            if (!location || location === '-') location = lastLocation;
+          } else {
+            lastItemName = itemName;
+            lastLocation = location === 'מספר מיקומים' ? '' : location;
+          }
+
           if (!itemName || !location) {
             skippedRows++;
             continue;
           }
 
-          const inventoryNumber = row['אינוונטר'] || row['מספר אינוונטר'] || row['Inventory Number'] || '';
-          const serialNumber = row['סריאלי'] || row['מספר סריאלי'] || row['Serial Number'] || '';
+          let inventoryNumber = String(row['אינוונטר'] || row['מספר אינוונטר'] || row['Inventory Number'] || '').trim();
+          let serialNumber = String(row['סריאלי'] || row['מספר סריאלי'] || row['Serial Number'] || '').trim();
+          let notes = String(row['הערות'] || row['Notes'] || '').trim();
           const quantity = parseInt(row['כמות'] || row['Quantity']) || 1;
-          const notes = row['הערות'] || row['Notes'] || '';
+
+          if (inventoryNumber === '-') inventoryNumber = '';
+          if (serialNumber === '-') serialNumber = '';
+          if (notes === '-') notes = '';
+
+          // If this is a master row from a visual export, SKIP IT if the NEXT row is its child row
+          if (!isChildRow) {
+            const nextRow = jsonData[i + 1];
+            if (nextRow) {
+              const nextItemName = String(nextRow['שם הפריט'] || nextRow['שם'] || '').trim();
+              if (nextItemName.includes('↳ פירוט')) {
+                continue; // Skip master row to avoid duplicating quantities
+              }
+            }
+          }
 
           importedItems.push({
             id: generateId(),
-            itemName: String(itemName).trim(),
-            location: String(location).trim(),
-            inventoryNumber: String(inventoryNumber).trim(),
-            serialNumber: String(serialNumber).trim(),
+            itemName: itemName,
+            location: location,
+            inventoryNumber: inventoryNumber,
+            serialNumber: serialNumber,
             quantity: quantity,
             minQuantity: 0,
-            notes: String(notes).trim(),
+            notes: notes,
             createdAt: new Date().toISOString()
           });
         }
